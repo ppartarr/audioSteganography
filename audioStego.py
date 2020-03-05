@@ -25,9 +25,11 @@ TRAIN_DATA = TRAIN_DATA[TRAIN_DATA.path_from_data_dir.str.contains('WAV.wav',  n
 TEST_DATA = pd.read_csv(os.path.join(DATA_DIR, "test_data.csv"))
 TEST_DATA = TEST_DATA[TEST_DATA.path_from_data_dir.str.contains('WAV.wav',  na=False)]
 
-# Print example waveform & stats
-print("Number of training examples:", TRAIN_DATA.shape[0])
-print("Number of test examples:", TEST_DATA.shape[0])
+# Print statistics.
+print("Number of training examples = " + str(TRAIN_DATA.shape[0]))
+print("Number of test examples = " + str(TEST_DATA.shape[0]))
+print("Training data shape: " + str(TRAIN_DATA.shape)) # Should be (train_size, 64, 64, 3).
+
 waveform, sample_rate = torchaudio.load_wav(os.path.join(DATA_DIR, TRAIN_DATA.path_from_data_dir[0]))
 # sample rate is the number of times per second the value of the audio signal is saved
 # shape is the total number of samples
@@ -75,7 +77,105 @@ def load_dataset_as_spectrograms_small(num_audio_samples_train=100, num_audio_sa
     return np.array(X_train_pad), np.array(X_test_pad)
 
 # Load dataset
-# TRAINING_DATASET, TEST_DATASET = load_dataset_as_spectrograms_small()
-TRAINING_DATASET, TEST_DATASET = load_dataset_as_spectrograms_small()
-print('Training dataset shape:', TRAINING_DATASET.shape)
-print('Test dataset shape:', TEST_DATASET.shape)
+train_data, test_data = load_dataset_as_spectrograms_small()
+print(train_data.shape)
+print(test_data.shape)
+
+
+# We split training set into two halfs.
+secret_audio_files = train_data[0:train_data.shape // 2]
+
+# # C: cover audio
+cover_audio_files = train_data[train_data.shape // 2:]
+
+
+# Create the encoder and decoder networks
+class CoverEncoderNet(nn.Module):
+
+    def __init__(self):
+        """
+        In this constructor we instantiate a 3 layer neural network with two lin
+        """
+        super(CoverEncoderNet, self).__init__()
+        # 1 input image channel, 6 output channels, 3x3 square convolution
+        self.conv1 = nn.Conv2d(1, 64, 3)
+        self.conv2 = nn.Conv2d(64, 64, 3)
+        self.conv3 = nn.Conv2d(64, 64, 3)
+
+    def forward(self, x):
+        x = F.max_pool2d(F.relu(self.conv1(x)), 2)
+        x = F.max_pool2d(F.relu(self.conv2(x)), 2)
+        x = F.max_pool2d(F.relu(self.conv3(x)), 2)
+        return x
+
+class CoverDecoderNet(nn.Module):
+
+    def __init__(self):
+        """
+        In this constructor we instantiate a 3 layer neural network with two lin
+        """
+        super(CoverDecoderNet, self).__init__()
+        # 1 input image channel, 6 output channels, 3x3 square convolution
+        self.conv1 = nn.Conv2d(1, 64, 3)
+        self.conv2 = nn.Conv2d(64, 64, 3)
+        self.conv3 = nn.Conv2d(64, 64, 3)
+
+    def forward(self, x):
+        x = F.max_pool2d(F.relu(self.conv1(x)), 2)
+        x = F.max_pool2d(F.relu(self.conv2(x)), 2)
+        x = F.max_pool2d(F.relu(self.conv3(x)), 2)
+        return x
+
+class SecretDecoderNet(nn.Module):
+
+    def __init__(self):
+        """
+        In this constructor we instantiate a 3 layer neural network with two lin
+        """
+        super(SecretDecoderNet, self).__init__()
+        # 1 input image channel, 6 output channels, 3x3 square convolution
+        self.conv1 = nn.Conv2d(1, 64, 3)
+        self.conv2 = nn.Conv2d(64, 64, 3)
+        self.conv3 = nn.Conv2d(64, 64, 3)
+
+    def forward(self, x):
+        x = F.max_pool2d(F.relu(self.conv1(x)), 2)
+        x = F.max_pool2d(F.relu(self.conv2(x)), 2)
+        x = F.max_pool2d(F.relu(self.conv3(x)), 2)
+        return x
+
+
+cover_encoder = CoverEncoderNet()
+cover_decoder = CoverDecoderNet()
+secret_decoder = SecretDecoderNet()
+
+
+carrier = cover_encoder(train_data)
+modified_cover = cover_decoder(carrier)
+modified_secret = secret_decoder(modified_cover)
+
+
+
+# Use ADAM as an optimizer
+# We use the default learning rate (lr) of 1e-3
+# TODO test with different weight decays
+optimizer = torch.optim.Adam(model.parameters(), lr = 0.001, weight_decay = 0.0001)
+scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size = 20, gamma = 0.1)
+
+def train(model, epoch):
+    model.train()
+    for batch_idx, (data, target) in enumerate(train_loader):
+        optimizer.zero_grad()
+        # TODO run on GPU for training
+        # data = data.to(device)
+        # target = target.to(device)
+        data = data.requires_grad_() #set requires_grad to True for training
+        output = model(data)
+        output = output.permute(1, 0, 2) #original output dimensions are batchSizex1x10
+        loss = F.nll_loss(output[0], target) #the loss functions expects a batchSizex10 input
+        loss.backward()
+        optimizer.step()
+        if batch_idx % log_interval == 0: #print training stats
+            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+                epoch, batch_idx * len(data), len(train_loader.dataset),
+                100. * batch_idx / len(train_loader), loss))
