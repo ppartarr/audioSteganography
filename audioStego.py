@@ -5,7 +5,6 @@
 # It is defined by the kaggle/python docker image: https://github.com/kaggle/docker-python
 # For example, here's several helpful packages to load in 
 
-from torch.utils.data import Dataset
 import IPython
 import math
 import matplotlib.pyplot as plt
@@ -13,169 +12,89 @@ import numpy as np
 import os
 import pandas as pd
 import random
-import torch
-import torchaudio
-import torch.nn as nn
-import torch.nn.functional as F
+import tensorflow as tf
+from tensorflow.keras.callbacks import ModelCheckpoint, LearningRateScheduler, TensorBoard
+from tensorflow.keras.layers import *
+from tensorflow.keras.models import Model
+from tensorflow.keras.preprocessing import image
+import tensorflow.keras.backend as K
+from tensorflow.python.framework.ops import disable_eager_execution
 
 # Import data from TIMIT dataset
-DATA_DIR = "data"
-TRAIN_DATA = pd.read_csv(os.path.join(DATA_DIR, "train_data.csv"))
-TRAIN_DATA = TRAIN_DATA[TRAIN_DATA.path_from_data_dir.str.contains('WAV.wav',  na=False)]
-TEST_DATA = pd.read_csv(os.path.join(DATA_DIR, "test_data.csv"))
-TEST_DATA = TEST_DATA[TEST_DATA.path_from_data_dir.str.contains('WAV.wav',  na=False)]
+data_dir = "data"
+train_csv = pd.read_csv(os.path.join(data_dir, "train_data.csv"))
+train_data = train_csv[train_csv.path_from_data_dir.str.contains('WAV.wav',  na=False)]
+test_csv = pd.read_csv(os.path.join(data_dir, "test_data.csv"))
+test_data = test_csv[test_csv.path_from_data_dir.str.contains('WAV.wav',  na=False)]
+batch_size = 32
+num_samples = 10
+sample_rate = 16000
 
-# Print statistics.
-print("Number of training examples = " + str(TRAIN_DATA.shape[0]))
-print("Number of test examples = " + str(TEST_DATA.shape[0]))
-print("Training data shape: " + str(TRAIN_DATA.shape)) # Should be (train_size, 64, 64, 3).
+# Print statistics
+print("Total number of training examples = " + str(train_data.shape[0]))
+print("Total number of test examples = " + str(test_data.shape[0]))
 
-waveform, sample_rate = torchaudio.load_wav(os.path.join(DATA_DIR, TRAIN_DATA.path_from_data_dir[0]))
-# sample rate is the number of times per second the value of the audio signal is saved
-# shape is the total number of samples
-print("Shape of waveform:", waveform.shape)
+raw_audio = tf.io.read_file(os.path.join(data_dir, train_data.path_from_data_dir[0]))
+audio, sample_rate = tf.audio.decode_wav(raw_audio)
+print("Shape of the audio file:", audio.shape)
 print("Sample rate of waveform:", sample_rate)
-print("Sample length:", int(waveform.size()[1]) / sample_rate)
+
+# We can obtain the length of the audio file in seconds by doing audio.shape / sample_rate
+
+def pad(dataset=train_data, padding_mode="CONSTANT"):
+
+    padded_specgrams = []
+
+    # padding
+    pad_to = max([specgram.shape[1] for specgram in dataset])
+    for specgram in dataset:
+        pad_by = pad_to - specgram.shape[1]
+        paddings = tf.constant([[0, 0], [0, pad_by], [0, 0]])
+        specgram_pad = tf.pad(specgram, paddings, padding_mode)
+        padded_specgrams.append(specgram_pad.numpy())
+
+    return padded_specgrams
 
 # Convert audio to spectrogram using Short Time Fourier Transform (STFT)
-def load_dataset_as_spectrograms_small(num_audio_samples_train=100, num_audio_samples_test=100):
+def load_dataset_mel_spectogram(num_audio_files=100, dataset=train_data):
     """
     Loads training and test datasets, from TIMIT and convert into spectrogram using STFT
     Arguments:
-        num_audio_samples_per_class_train: number of audio per class to load into training dataset.
-        num_audio_samples_test: total number of audio samples to load into training dataset.
+        num_audio_samples_per_class_train: number of audio per class to load into training dataset
     """
 
     # list initialization
-    X_train, X_train_pad = [], []
-    X_test, X_test_pad = [], []
+    numpy_specgrams = []
 
     # data parsing
-    while len(X_train) < num_audio_samples_train:
-        sample = TRAIN_DATA.path_from_data_dir.sample()
-        waveform, sample_rate = torchaudio.load_wav(os.path.join(DATA_DIR, sample.item()))
-        specgram = torchaudio.transforms.MelSpectrogram(n_fft=512, win_length=10)(waveform)
-        X_train.append(specgram)
-    while len(X_test) < num_audio_samples_test:
-        sample = TEST_DATA.path_from_data_dir.sample()
-        waveform, sample_rate = torchaudio.load_wav(os.path.join(DATA_DIR, sample.item()))
-        specgram = torchaudio.transforms.MelSpectrogram(n_fft=512, win_length=10)(waveform)
-        X_test.append(specgram)
+    while len(numpy_specgrams) < num_audio_files:
+        sample = dataset.path_from_data_dir.sample()
 
-    # padding
-    pad_to = max([len(specgram[0][0]) for specgram in X_train + X_test])
-    for specgram in X_train:
-        pad_by = pad_to - len(specgram[0][0])
-        specgram_pad = F.pad(specgram, (0, pad_by, 0, 0), mode='constant')
-        X_train_pad.append(specgram_pad.numpy())
-    for specgram in X_test:
-        pad_by = pad_to - len(specgram[0][0])
-        specgram_pad = F.pad(specgram, (0, pad_by, 0, 0), mode='constant')
-        X_test_pad.append(specgram_pad.numpy())
+        # extract audio and sample rate from WAV file
+        raw_audio = tf.io.read_file(os.path.join(data_dir, sample.item()))
+        audio, sample_rate = tf.audio.decode_wav(raw_audio)
 
-    # Return train and test data as numpy arrays.
-    return np.array(X_train_pad), np.array(X_test_pad)
+        # reshape the signal to the shape of (batch_size, samples])
+        signals = tf.reshape(audio, [1, -1])
 
-# Load dataset
-train_data, test_data = load_dataset_as_spectrograms_small()
-print(train_data.shape)
-print(test_data.shape)
+        # a 1024-point STFT with frames of 64 ms and 75% overlap
+        stfts = tf.signal.stft(signals, frame_length=1024, frame_step=256, fft_length=1024)
+        spectrograms = tf.abs(stfts)
 
+        # warp the linear scale spectrograms into the mel-scale
+        num_spectrogram_bins = stfts.shape[-1]
+        lower_edge_hertz, upper_edge_hertz, num_mel_bins = 20.0, 8000.0, 128
+        linear_to_mel_weight_matrix = tf.signal.linear_to_mel_weight_matrix(num_mel_bins, num_spectrogram_bins, sample_rate, lower_edge_hertz, upper_edge_hertz)
+        mel_spectrograms = tf.tensordot(spectrograms, linear_to_mel_weight_matrix, 1)
+        mel_spectrograms.set_shape(spectrograms.shape[:-1].concatenate(linear_to_mel_weight_matrix.shape[-1:]))
+
+        numpy_specgrams.append(mel_spectrograms)
+
+    return np.array(pad(numpy_specgrams))
+
+x_train = load_dataset_mel_spectogram(dataset=train_data)
+x_test = load_dataset_mel_spectogram(dataset=test_data)
 
 # We split training set into two halfs.
-secret_audio_files = train_data[0:train_data.shape // 2]
-
-# # C: cover audio
-cover_audio_files = train_data[train_data.shape // 2:]
-
-
-# Create the encoder and decoder networks
-class CoverEncoderNet(nn.Module):
-
-    def __init__(self):
-        """
-        In this constructor we instantiate a 3 layer neural network with two lin
-        """
-        super(CoverEncoderNet, self).__init__()
-        # 1 input image channel, 6 output channels, 3x3 square convolution
-        self.conv1 = nn.Conv2d(1, 64, 3)
-        self.conv2 = nn.Conv2d(64, 64, 3)
-        self.conv3 = nn.Conv2d(64, 64, 3)
-
-    def forward(self, x):
-        x = F.max_pool2d(F.relu(self.conv1(x)), 2)
-        x = F.max_pool2d(F.relu(self.conv2(x)), 2)
-        x = F.max_pool2d(F.relu(self.conv3(x)), 2)
-        return x
-
-class CoverDecoderNet(nn.Module):
-
-    def __init__(self):
-        """
-        In this constructor we instantiate a 3 layer neural network with two lin
-        """
-        super(CoverDecoderNet, self).__init__()
-        # 1 input image channel, 6 output channels, 3x3 square convolution
-        self.conv1 = nn.Conv2d(1, 64, 3)
-        self.conv2 = nn.Conv2d(64, 64, 3)
-        self.conv3 = nn.Conv2d(64, 64, 3)
-
-    def forward(self, x):
-        x = F.max_pool2d(F.relu(self.conv1(x)), 2)
-        x = F.max_pool2d(F.relu(self.conv2(x)), 2)
-        x = F.max_pool2d(F.relu(self.conv3(x)), 2)
-        return x
-
-class SecretDecoderNet(nn.Module):
-
-    def __init__(self):
-        """
-        In this constructor we instantiate a 3 layer neural network with two lin
-        """
-        super(SecretDecoderNet, self).__init__()
-        # 1 input image channel, 6 output channels, 3x3 square convolution
-        self.conv1 = nn.Conv2d(1, 64, 3)
-        self.conv2 = nn.Conv2d(64, 64, 3)
-        self.conv3 = nn.Conv2d(64, 64, 3)
-
-    def forward(self, x):
-        x = F.max_pool2d(F.relu(self.conv1(x)), 2)
-        x = F.max_pool2d(F.relu(self.conv2(x)), 2)
-        x = F.max_pool2d(F.relu(self.conv3(x)), 2)
-        return x
-
-
-cover_encoder = CoverEncoderNet()
-cover_decoder = CoverDecoderNet()
-secret_decoder = SecretDecoderNet()
-
-
-carrier = cover_encoder(train_data)
-modified_cover = cover_decoder(carrier)
-modified_secret = secret_decoder(modified_cover)
-
-
-
-# Use ADAM as an optimizer
-# We use the default learning rate (lr) of 1e-3
-# TODO test with different weight decays
-optimizer = torch.optim.Adam(model.parameters(), lr = 0.001, weight_decay = 0.0001)
-scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size = 20, gamma = 0.1)
-
-def train(model, epoch):
-    model.train()
-    for batch_idx, (data, target) in enumerate(train_loader):
-        optimizer.zero_grad()
-        # TODO run on GPU for training
-        # data = data.to(device)
-        # target = target.to(device)
-        data = data.requires_grad_() #set requires_grad to True for training
-        output = model(data)
-        output = output.permute(1, 0, 2) #original output dimensions are batchSizex1x10
-        loss = F.nll_loss(output[0], target) #the loss functions expects a batchSizex10 input
-        loss.backward()
-        optimizer.step()
-        if batch_idx % log_interval == 0: #print training stats
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                epoch, batch_idx * len(data), len(train_loader.dataset),
-                100. * batch_idx / len(train_loader), loss))
+secret_audio_files = x_train[0:x_train.shape[0] // 2]
+cover_audio_files = x_train[x_train.shape[0] // 2:]
