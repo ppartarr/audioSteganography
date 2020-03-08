@@ -14,13 +14,13 @@ import os
 import pandas as pd
 import random
 import tensorflow as tf
-from tqdm import *
+import tensorflow.keras.backend as K
 from tensorflow.keras.callbacks import ModelCheckpoint, LearningRateScheduler, TensorBoard
-from tensorflow.keras.layers import *
+from tensorflow.keras.layers import Input, Conv2D, concatenate, GaussianNoise
 from tensorflow.keras.models import Model
 from tensorflow.keras.preprocessing import image
-import tensorflow.keras.backend as K
 from tensorflow.python.framework.ops import disable_eager_execution
+from tqdm import tqdm
 
 # Import data from TIMIT dataset
 data_dir = "data"
@@ -150,7 +150,7 @@ def full_loss(y_true, y_pred):
     # print('square', K.square(s_true - s_pred))
     # print('sum', K.sum(K.square(s_true - s_pred)))
     # print('rev', beta * K.sum(K.square(s_true - s_pred)))
-    
+
     # print('typeof s_true', type(s_true))
     # print('typeof s_pred', type(s_pred))
     # print('shape s_true', s_true.shape)
@@ -376,4 +376,5 @@ for epoch in range(epochs):
     loss_history.append(np.mean(ae_loss))
 
 # save model
-autoencoder_model.save_weights('model-{}.hdf5'.format(datetime.datetime.now().strftime("%Y%m%d_%H%M")))
+autoencoder_model.save_weights(
+    'model-{}.hdf5'.format(datetime.datetime.now().strftime("%Y%m%d_%H%M")))
