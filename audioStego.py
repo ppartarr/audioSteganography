@@ -122,21 +122,45 @@ beta = 1.0
 # Loss for reveal network
 
 
-def rev_loss(s_true, s_pred):
+def rev_loss_fn(s_true, s_pred):
     # Loss for reveal network is: beta * |S-S'|
+    # print(type(beta))
+    # print(type(K.sum))
+    # print(type(K.square))
+    # print(type(s_true))
+    # print(type(s_pred))
     return beta * K.sum(K.square(s_true - s_pred))
 
 # Loss for the full model, used for preparation and hidding networks
 
 
 def full_loss(y_true, y_pred):
+    # print('y_true', y_true)
+    # print('y_pred', y_pred)
     # Loss for the full model is: |C-C'| + beta * |S-S'|
     s_true, c_true = y_true[..., 0:3], y_true[..., 3:6]
     s_pred, c_pred = y_pred[..., 0:3], y_pred[..., 3:6]
 
-    s_loss = rev_loss(s_true, s_pred)
-    c_loss = K.sum(K.square(c_true - c_pred))
+    # print('s_true',  s_true)
+    # print('c_true', c_true)
+    # print('s_pred', s_pred)
+    # print('c_pred', c_pred)
+    # print('diff', s_true - s_pred)
+    # print('square', K.square(s_true - s_pred))
+    # print('sum', K.sum(K.square(s_true - s_pred)))
+    # print('rev', beta * K.sum(K.square(s_true - s_pred)))
+    
+    # print('typeof s_true', type(s_true))
+    # print('typeof s_pred', type(s_pred))
+    # print('shape s_true', s_true.shape)
+    # print('shape s_pred', s_pred.shape)
+    s_loss = rev_loss_fn(s_true, s_pred)
+    # print('s_loss', s_loss)
 
+    c_loss = K.sum(K.square(c_true - c_pred))
+    # print('c_loss', c_loss)
+
+    # print('sum', s_loss + c_loss)
     return s_loss + c_loss
 
 # Returns the encoder as a Keras model, composed by Preparation and Hiding Networks.
@@ -145,8 +169,8 @@ def full_loss(y_true, y_pred):
 def make_encoder(input_size):
     input_S = Input(shape=(input_size))
     input_C = Input(shape=(input_size))
-    print(input_S.shape)
-    print(input_C.shape)
+    # print(input_S.shape)
+    # print(input_C.shape)
 
     # Preparation Network
     # x3 = Conv2D(64, (128),padding='same', activation='relu', name='conv_prep0_3x3')(input_S)
@@ -216,11 +240,11 @@ def make_decoder(input_size, fixed=False):
 
     # Reveal network
     reveal_input = Input(shape=(input_size))
-    print(reveal_input.shape)
+    # print(reveal_input.shape)
 
     # Adding Gaussian noise with 0.01 standard deviation.
     input_with_noise = GaussianNoise(0.01, name='output_C_noise')(reveal_input)
-    print(input_with_noise.shape)
+    # print(input_with_noise.shape)
 
     x3 = Conv2D(64, (2, 128), padding='same', activation='relu',
                 name='conv_rev0_3x3')(input_with_noise)
@@ -280,17 +304,17 @@ def make_decoder(input_size, fixed=False):
 def make_model(input_size):
     input_S = Input(shape=(input_size))
     input_C = Input(shape=(input_size))
-    print(input_S.shape)
-    print(input_C.shape)
+    # print(input_S.shape)
+    # print(input_C.shape)
 
     encoder = make_encoder(input_size)
 
     decoder = make_decoder(input_size)
+    decoder.compile(optimizer='adam', loss=rev_loss_fn)
     decoder.trainable = False
-    decoder.compile(optimizer='adam', loss=rev_loss)
 
     output_Cprime = encoder([input_S, input_C])
-    print(output_Cprime.shape)
+    # print(output_Cprime.shape)
     output_Sprime = decoder(output_Cprime)
 
     autoencoder = Model(inputs=[input_S, input_C],
@@ -306,6 +330,7 @@ print(secret_audio_files.shape[1:])
 encoder_model, reveal_model, autoencoder_model = make_model(
     secret_audio_files.shape[1:])
 
+
 def lr_schedule(epoch_idx):
     if epoch_idx < 200:
         return 0.001
@@ -316,30 +341,35 @@ def lr_schedule(epoch_idx):
     else:
         return 0.00003
 
+
 m = secret_audio_files.shape[0]
 loss_history = []
 for epoch in range(epochs):
     np.random.shuffle(secret_audio_files)
     np.random.shuffle(cover_audio_files)
-    
-    t = tqdm(range(0, secret_audio_files.shape[0], batch_size),mininterval=0)
+
+    t = tqdm(range(0, secret_audio_files.shape[0], batch_size), mininterval=0)
     ae_loss = []
     rev_loss = []
     for idx in t:
-        
+
         batch_S = secret_audio_files[idx:min(idx + batch_size, m)]
+        # print(batch_S.shape)
         batch_C = cover_audio_files[idx:min(idx + batch_size, m)]
-        
+        # print(batch_C.shape)
+
         C_prime = encoder_model.predict([batch_S, batch_C])
-        
+        # print(type(C_prime))
+
         ae_loss.append(autoencoder_model.train_on_batch(x=[batch_S, batch_C],
-                                                   y=np.concatenate((batch_S, batch_C),axis=3)))
+                                                        y=np.concatenate((batch_S, batch_C), axis=3)))
         rev_loss.append(reveal_model.train_on_batch(x=C_prime,
-                                              y=batch_S))
-        
+                                                    y=batch_S))
+
         # Update learning rate
         K.set_value(autoencoder_model.optimizer.lr, lr_schedule(epoch))
         K.set_value(reveal_model.optimizer.lr, lr_schedule(epoch))
-        
-        t.set_description('Epoch {} | Batch: {:3} of {}. Loss AE {:10.2f} | Loss Rev {:10.2f}'.format(epoch + 1, idx, m, np.mean(ae_loss), np.mean(rev_loss)))
+
+        t.set_description('Epoch {} | Batch: {:3} of {}. Loss AE {:10.2f} | Loss Rev {:10.2f}'.format(
+            epoch + 1, idx, m, np.mean(ae_loss), np.mean(rev_loss)))
     loss_history.append(np.mean(ae_loss))
