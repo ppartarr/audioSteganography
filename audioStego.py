@@ -5,6 +5,7 @@
 # It is defined by the kaggle/python docker image: https://github.com/kaggle/docker-python
 # For example, here's several helpful packages to load in
 
+import datetime
 import IPython
 import math
 import matplotlib.pyplot as plt
@@ -373,3 +374,6 @@ for epoch in range(epochs):
         t.set_description('Epoch {} | Batch: {:3} of {}. Loss AE {:10.2f} | Loss Rev {:10.2f}'.format(
             epoch + 1, idx, m, np.mean(ae_loss), np.mean(rev_loss)))
     loss_history.append(np.mean(ae_loss))
+
+# save model
+autoencoder_model.save_weights('model-{}.hdf5'.format(datetime.datetime.now().strftime("%Y%m%d_%H%M")))
