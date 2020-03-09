@@ -113,8 +113,8 @@ def load_dataset_mel_spectogram(num_audio_files=100, dataset=train_data):
 #   1 is the number of channels (mono)
 #   x is the number of 64ms spectrograms with 716% overlap
 #   128 is the number of mel filters
-x_train = load_dataset_mel_spectogram(num_audio_files=10, dataset=train_data)
-x_test = load_dataset_mel_spectogram(num_audio_files=10, dataset=test_data)
+x_train = load_dataset_mel_spectogram(num_audio_files=num_samples, dataset=train_data)
+x_test = load_dataset_mel_spectogram(num_audio_files=num_samples, dataset=test_data)
 
 # we split training set into two halfs.
 secret_audio_files = x_train[0:x_train.shape[0] // 2]
