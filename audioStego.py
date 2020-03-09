@@ -22,6 +22,9 @@ from tensorflow.keras.preprocessing import image
 from tensorflow.python.framework.ops import disable_eager_execution
 from tqdm import tqdm
 
+# disable tensorflow verbosity
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
 # Import data from TIMIT dataset
 data_dir = "data"
 train_csv = pd.read_csv(os.path.join(data_dir, "train_data.csv"))
