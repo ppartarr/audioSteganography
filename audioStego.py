@@ -334,24 +334,21 @@ def lr_schedule(epoch_idx):
         return 0.00003
 
 
-m = secret_audio_files.shape[0]
+num_secret_audio_files = secret_audio_files.shape[0]
 loss_history = []
 for epoch in range(epochs):
     np.random.shuffle(secret_audio_files)
     np.random.shuffle(cover_audio_files)
 
-    t = tqdm(range(0, secret_audio_files.shape[0], batch_size), mininterval=0)
+    t = tqdm(range(0, num_secret_audio_files, batch_size), mininterval=0)
     ae_loss = []
     rev_loss = []
     for idx in t:
 
-        batch_S = secret_audio_files[idx:min(idx + batch_size, m)]
-        # print(batch_S.shape)
-        batch_C = cover_audio_files[idx:min(idx + batch_size, m)]
-        # print(batch_C.shape)
+        batch_S = secret_audio_files[idx:min(idx + batch_size, num_secret_audio_files)]
+        batch_C = cover_audio_files[idx:min(idx + batch_size, num_secret_audio_files)]
 
         C_prime = encoder_model.predict([batch_S, batch_C])
-        # print(type(C_prime))
 
         ae_loss.append(autoencoder_model.train_on_batch(x=[batch_S, batch_C],
                                                         y=np.concatenate((batch_S, batch_C), axis=3)))
@@ -361,9 +358,8 @@ for epoch in range(epochs):
         # Update learning rate
         K.set_value(autoencoder_model.optimizer.lr, lr_schedule(epoch))
         K.set_value(reveal_model.optimizer.lr, lr_schedule(epoch))
-
         t.set_description('Epoch {} | Batch: {} of {}. Loss AE {:10.2f} | Loss Rev {:10.2f}'.format(
-            epoch + 1, idx, m, np.mean(ae_loss), np.mean(rev_loss)))
+            epoch + 1, idx, num_secret_audio_files, np.mean(ae_loss), np.mean(rev_loss)))
     loss_history.append(np.mean(ae_loss))
 
 # save model
