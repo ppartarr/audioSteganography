@@ -20,6 +20,7 @@ from tensorflow.keras.layers import Input, Conv2D, concatenate, GaussianNoise
 from tensorflow.keras.models import Model
 from tensorflow.keras.preprocessing import image
 from tensorflow.python.framework.ops import disable_eager_execution
+from tensorflow.keras import losses
 from tqdm import tqdm
 
 # disable tensorflow verbosity
@@ -130,12 +131,7 @@ beta = 1.0
 
 def rev_loss_fn(s_true, s_pred):
     # Loss for reveal network is: beta * |S-S'|
-    # print(type(beta))
-    # print(type(K.sum))
-    # print(type(K.square))
-    # print(type(s_true))
-    # print(type(s_pred))
-    return beta * K.sum(K.square(s_true - s_pred))
+    return beta * losses.mean_squared_error(s_true, s_pred)
 
 # Loss for the full model, used for preparation and hidding networks
 
@@ -161,10 +157,7 @@ def full_loss(y_true, y_pred):
     # print('shape s_true', s_true.shape)
     # print('shape s_pred', s_pred.shape)
     s_loss = rev_loss_fn(s_true, s_pred)
-    # print('s_loss', s_loss)
-
-    c_loss = K.sum(K.square(c_true - c_pred))
-    # print('c_loss', c_loss)
+    c_loss = losses.mean_squared_error(c_true, c_pred)
 
     # print('sum', s_loss + c_loss)
     return s_loss + c_loss
