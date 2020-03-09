@@ -140,26 +140,14 @@ def full_loss(y_true, y_pred):
     # print('y_true', y_true)
     # print('y_pred', y_pred)
     # Loss for the full model is: |C-C'| + beta * |S-S'|
-    s_true, c_true = y_true[..., 0:3], y_true[..., 3:6]
-    s_pred, c_pred = y_pred[..., 0:3], y_pred[..., 3:6]
+    s_true, c_true = y_true[..., 0:128], y_true[..., 128:256]
+    s_pred, c_pred = y_pred[..., 0:128], y_pred[..., 128:256]
 
-    # print('s_true',  s_true)
-    # print('c_true', c_true)
-    # print('s_pred', s_pred)
-    # print('c_pred', c_pred)
-    # print('diff', s_true - s_pred)
-    # print('square', K.square(s_true - s_pred))
-    # print('sum', K.sum(K.square(s_true - s_pred)))
-    # print('rev', beta * K.sum(K.square(s_true - s_pred)))
+    # print("y_true: {}".format(y_true))
+    # print("y_pred: {}".format(y_pred))
 
-    # print('typeof s_true', type(s_true))
-    # print('typeof s_pred', type(s_pred))
-    # print('shape s_true', s_true.shape)
-    # print('shape s_pred', s_pred.shape)
     s_loss = rev_loss_fn(s_true, s_pred)
     c_loss = losses.mean_squared_error(c_true, c_pred)
-
-    # print('sum', s_loss + c_loss)
     return s_loss + c_loss
 
 # Returns the encoder as a Keras model, composed by Preparation and Hiding Networks.
