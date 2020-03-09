@@ -374,7 +374,7 @@ for epoch in range(epochs):
         K.set_value(autoencoder_model.optimizer.lr, lr_schedule(epoch))
         K.set_value(reveal_model.optimizer.lr, lr_schedule(epoch))
 
-        t.set_description('Epoch {} | Batch: {:3} of {}. Loss AE {:10.2f} | Loss Rev {:10.2f}'.format(
+        t.set_description('Epoch {} | Batch: {} of {}. Loss AE {:10.2f} | Loss Rev {:10.2f}'.format(
             epoch + 1, idx, m, np.mean(ae_loss), np.mean(rev_loss)))
     loss_history.append(np.mean(ae_loss))
 
