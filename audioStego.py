@@ -113,8 +113,10 @@ def load_dataset_mel_spectogram(num_audio_files=100, dataset=train_data):
 #   1 is the number of channels (mono)
 #   x is the number of 64ms spectrograms with 716% overlap
 #   128 is the number of mel filters
-x_train = load_dataset_mel_spectogram(num_audio_files=num_samples, dataset=train_data)
-x_test = load_dataset_mel_spectogram(num_audio_files=num_samples, dataset=test_data)
+x_train = load_dataset_mel_spectogram(
+    num_audio_files=num_samples, dataset=train_data)
+x_test = load_dataset_mel_spectogram(
+    num_audio_files=num_samples, dataset=test_data)
 
 # we split training set into two halfs.
 secret_audio_files = x_train[0:x_train.shape[0] // 2]
@@ -177,25 +179,31 @@ def make_encoder(input_size):
     # print(input_C.shape)
 
     # Preparation Network
-    # x3 = Conv2D(64, (128),padding='same', activation='relu', name='conv_prep0_3x3')(input_S)
-    # x4 = Conv2D(32, (64),padding='same', activation='relu', name='conv_prep0_4x4')(input_S)
-    # x5 = Conv2D(16, (32),padding='same', activation='relu', name='conv_prep0_5x5')(input_S)
-    # x = concatenate([x3, x4, x5])
+    x3 = Conv2D(64, (128), padding='same', activation='relu',
+                name='conv_prep0_3x3')(input_S)
+    x4 = Conv2D(32, (64), padding='same', activation='relu',
+                name='conv_prep0_4x4')(input_S)
+    x5 = Conv2D(16, (32), padding='same', activation='relu',
+                name='conv_prep0_5x5')(input_S)
+    x = concatenate([x3, x4, x5])
 
-    # x3 = Conv2D(64, (128),padding='same', activation='relu', name='conv_prep1_3x3')(x)
-    # x4 = Conv2D(32, (64),padding='same', activation='relu', name='conv_prep1_4x4')(x)
-    # x5 = Conv2D(16, (32),padding='same', activation='relu', name='conv_prep1_5x5')(x)
-    # x = concatenate([x3, x4, x5])
+    x3 = Conv2D(64, (128), padding='same',
+                activation='relu', name='conv_prep1_3x3')(x)
+    x4 = Conv2D(32, (64), padding='same',
+                activation='relu', name='conv_prep1_4x4')(x)
+    x5 = Conv2D(16, (32), padding='same',
+                activation='relu', name='conv_prep1_5x5')(x)
+    x = concatenate([x3, x4, x5])
 
-    # x = concatenate([input_C, x])
+    x = concatenate([input_C, x])
 
     # Hiding network
     x3 = Conv2D(64, (2, 128), padding='same', activation='relu',
-                name='conv_hid0_3x3')(input_S)
+                name='conv_hid0_3x3')(x)
     x4 = Conv2D(32, (64), padding='same', activation='relu',
-                name='conv_hid0_4x4')(input_S)
+                name='conv_hid0_4x4')(x)
     x5 = Conv2D(16, (32), padding='same', activation='relu',
-                name='conv_hid0_5x5')(input_S)
+                name='conv_hid0_5x5')(x)
     x = concatenate([x3, x4, x5])
 
     x3 = Conv2D(64, (2, 128), padding='same',
@@ -328,9 +336,8 @@ def make_model(input_size):
     return encoder, decoder, autoencoder
 
 
-print(type(secret_audio_files[0]))
-print(secret_audio_files.shape[1:])
-
+# print(type(secret_audio_files[0]))
+# print(secret_audio_files.shape[1:])
 encoder_model, reveal_model, autoencoder_model = make_model(
     secret_audio_files.shape[1:])
 
