@@ -6,23 +6,15 @@
 # For example, here's several helpful packages to load in
 
 import datetime
-import IPython
-import math
-import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pandas as pd
-import random
 import sys
 
 # tensorflow
 import tensorflow as tf
-import tensorflow.keras.backend as K
-from tensorflow.keras.callbacks import ModelCheckpoint, LearningRateScheduler, TensorBoard
 from tensorflow.keras.layers import Input, Conv2D, concatenate, GaussianNoise
 from tensorflow.keras.models import Model
-from tensorflow.keras.preprocessing import image
-from tensorflow.python.framework.ops import disable_eager_execution
 from tensorflow.keras import losses
 
 # regulate tensorflow verbosity
@@ -32,10 +24,10 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
 data_dir = "data"
 train_csv = pd.read_csv(os.path.join(data_dir, "train_data.csv"))
 train_data = train_csv[train_csv.path_from_data_dir.str.contains(
-    'WAV.wav',  na=False)]
+    'WAV.wav', na=False)]
 test_csv = pd.read_csv(os.path.join(data_dir, "test_data.csv"))
 test_data = test_csv[test_csv.path_from_data_dir.str.contains(
-    'WAV.wav',  na=False)]
+    'WAV.wav', na=False)]
 epochs = 1
 batch_size = 32
 num_samples = 10
@@ -51,7 +43,8 @@ audio, sample_rate = tf.audio.decode_wav(raw_audio)
 print("Shape of the audio file:", audio.shape)
 print("Sample rate of waveform:", sample_rate)
 
-# We can obtain the length of the audio file in seconds by doing audio.shape / sample_rate
+# We can obtain the length of the audio file in seconds by doing
+# audio.shape / sample_rate
 
 
 def pad(dataset=train_data, padding_mode="CONSTANT"):
@@ -125,7 +118,8 @@ x_test = load_dataset_mel_spectogram(
 secret_audio_files = x_train[0:x_train.shape[0] // 2]
 cover_audio_files = x_train[x_train.shape[0] // 2:]
 
-# Variable used to weight the losses of the secret and cover images (See paper for more details)
+# Variable used to weight the losses of the secret and cover images (See
+# paper for more details)
 beta = 1.0
 
 # Loss for reveal network
@@ -152,7 +146,8 @@ def full_loss(y_true, y_pred):
     c_loss = losses.mean_squared_error(c_true, c_pred)
     return s_loss + c_loss
 
-# Returns the encoder as a Keras model, composed by Preparation and Hiding Networks.
+# Returns the encoder as a Keras model, composed by Preparation and Hiding
+# Networks.
 
 
 def make_encoder(input_size):
@@ -231,7 +226,7 @@ def make_encoder(input_size):
 # Returns the decoder as a Keras model, composed by the Reveal Network
 
 
-def make_decoder(input_size, fixed=False):
+def make_decoder(input_size):
 
     # Reveal network
     reveal_input = Input(shape=(input_size))
@@ -284,14 +279,9 @@ def make_decoder(input_size, fixed=False):
     output_Sprime = Conv2D(128, (2, 128), padding='same',
                            activation='relu', name='output_S')(x)
 
-    if not fixed:
-        return Model(inputs=reveal_input,
-                     outputs=output_Sprime,
-                     name='Decoder')
-    else:
-        return Container(inputs=reveal_input,
-                         outputs=output_Sprime,
-                         name='DecoderFixed')
+    return Model(inputs=reveal_input,
+                 outputs=output_Sprime,
+                 name='Decoder')
 
 # Full model.
 
@@ -337,7 +327,8 @@ def lr_schedule(epoch_idx):
 
 
 if len(sys.argv) == 1:
-    autoencoder_model.fit(x=[secret_audio_files, cover_audio_files], y=np.concatenate((secret_audio_files, cover_audio_files), axis=3), epochs=epochs, batch_size=batch_size)
+    autoencoder_model.fit(x=[secret_audio_files, cover_audio_files], y=np.concatenate(
+        (secret_audio_files, cover_audio_files), axis=3), epochs=epochs, batch_size=batch_size)
 
     # num_secret_audio_files = secret_audio_files.shape[0]
     # loss_history = []
