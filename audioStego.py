@@ -17,10 +17,18 @@ from tensorflow.keras.layers import Input, Conv2D, concatenate, GaussianNoise
 from tensorflow.keras.models import Model
 from tensorflow.keras import losses
 
+# memory investigation
+from pympler import muppy, summary
+
+# logging
+import logging as log
+log.basicConfig(format='%(asctime)s.%(msecs)06d: %(message)s',
+                datefmt='%Y-%m-%d %I:%M:%S', level=log.INFO)
+
 # regulate tensorflow verbosity
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
 
-# Import data from TIMIT dataset
+# import TIMIT dataset
 data_dir = "data"
 train_csv = pd.read_csv(os.path.join(data_dir, "train_data.csv"))
 train_data = train_csv[train_csv.path_from_data_dir.str.contains(
@@ -33,21 +41,21 @@ batch_size = 32
 num_samples = 10
 sample_rate = 16000
 
-# Print statistics
-print("Total number of training examples = " + str(train_data.shape[0]))
-print("Total number of test examples = " + str(test_data.shape[0]))
+# configuration statistics
+log.info('Training examples: {}'.format(train_data.shape[0]))
+log.info('Test examples: {}'.format(test_data.shape[0]))
 
-raw_audio = tf.io.read_file(os.path.join(
-    data_dir, train_data.path_from_data_dir[0]))
-audio, sample_rate = tf.audio.decode_wav(raw_audio)
-print("Shape of the audio file:", audio.shape)
-print("Sample rate of waveform:", sample_rate)
+# single sample informations
+# the length of the audio file in seconds is audio.shape / sample_rate
+audio, sample_rate = tf.audio.decode_wav(tf.io.read_file(os.path.join(
+    data_dir, train_data.path_from_data_dir[0])))
+log.info('Shape of the audio file: {}'.format(audio.shape))
+log.info('Sample rate of waveform: {}'.format(sample_rate))
+del audio
+del sample_rate
 
-# We can obtain the length of the audio file in seconds by doing
-# audio.shape / sample_rate
 
-
-def pad(dataset=train_data, padding_mode="CONSTANT"):
+def pad(dataset=train_data, padding_mode='CONSTANT'):
 
     padded_specgrams = []
 
@@ -113,10 +121,16 @@ x_train = load_dataset_mel_spectogram(
     num_audio_files=num_samples, dataset=train_data)
 x_test = load_dataset_mel_spectogram(
     num_audio_files=num_samples, dataset=test_data)
+del train_csv
+del train_data
+del test_csv
+del test_data
 
 # we split training set into two halfs.
 secret_audio_files = x_train[0:x_train.shape[0] // 2]
 cover_audio_files = x_train[x_train.shape[0] // 2:]
+
+summary.print_(summary.summarize(muppy.get_objects()))
 
 # Variable used to weight the losses of the secret and cover images (See
 # paper for more details)
@@ -329,7 +343,6 @@ def lr_schedule(epoch_idx):
 if len(sys.argv) == 1:
     autoencoder_model.fit(x=[secret_audio_files, cover_audio_files], y=np.concatenate(
         (secret_audio_files, cover_audio_files), axis=3), epochs=epochs, batch_size=batch_size)
-
     # num_secret_audio_files = secret_audio_files.shape[0]
     # loss_history = []
     # for epoch in range(epochs):
@@ -359,8 +372,10 @@ if len(sys.argv) == 1:
     #     loss_history.append(np.mean(ae_loss))
 
     # save model
-    autoencoder_model.save_weights(
-        'model-{}.hdf5'.format(datetime.datetime.now().strftime("%Y%m%d_%H%M")))
+    model_hdf5 = 'model-{}.hdf5'.format(
+        datetime.datetime.now().strftime("%Y%m%d_%H%M"))
+    autoencoder_model.save_weights(model_hdf5)
+    log.info('Model weights saved at {}'.format(model_hdf5))
 else:
     autoencoder_model.load_weights(sys.argv[1])
-    print('Model loaded from', sys.argv[1])
+    log.info('Model loaded from {}'.format(sys.argv[1]))
