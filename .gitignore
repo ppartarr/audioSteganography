@@ -1,4 +1,4 @@
 data/
 venv/
 .vscode/
-*.hd5f
+*.hdf5
