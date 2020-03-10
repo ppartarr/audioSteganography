@@ -13,6 +13,9 @@ import numpy as np
 import os
 import pandas as pd
 import random
+import sys
+
+# tensorflow
 import tensorflow as tf
 import tensorflow.keras.backend as K
 from tensorflow.keras.callbacks import ModelCheckpoint, LearningRateScheduler, TensorBoard
@@ -21,7 +24,6 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.preprocessing import image
 from tensorflow.python.framework.ops import disable_eager_execution
 from tensorflow.keras import losses
-from tqdm import tqdm
 
 # disable tensorflow verbosity
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
@@ -334,36 +336,40 @@ def lr_schedule(epoch_idx):
         return 0.00003
 
 
-autoencoder_model.fit(x=[secret_audio_files, cover_audio_files], y=np.concatenate((secret_audio_files, cover_audio_files), axis=3), epochs=epochs, batch_size=batch_size)
+if len(sys.argv) == 1:
+    autoencoder_model.fit(x=[secret_audio_files, cover_audio_files], y=np.concatenate((secret_audio_files, cover_audio_files), axis=3), epochs=epochs, batch_size=batch_size)
 
-# num_secret_audio_files = secret_audio_files.shape[0]
-# loss_history = []
-# for epoch in range(epochs):
-#     np.random.shuffle(secret_audio_files)
-#     np.random.shuffle(cover_audio_files)
+    # num_secret_audio_files = secret_audio_files.shape[0]
+    # loss_history = []
+    # for epoch in range(epochs):
+    #     np.random.shuffle(secret_audio_files)
+    #     np.random.shuffle(cover_audio_files)
 
-#     t = tqdm(range(0, num_secret_audio_files, batch_size), mininterval=0)
-#     ae_loss = []
-#     rev_loss = []
-#     for idx in t:
+    #     t = tqdm(range(0, num_secret_audio_files, batch_size), mininterval=0)
+    #     ae_loss = []
+    #     rev_loss = []
+    #     for idx in t:
 
-#         batch_S = secret_audio_files[idx:min(idx + batch_size, num_secret_audio_files)]
-#         batch_C = cover_audio_files[idx:min(idx + batch_size, num_secret_audio_files)]
+    #         batch_S = secret_audio_files[idx:min(idx + batch_size, num_secret_audio_files)]
+    #         batch_C = cover_audio_files[idx:min(idx + batch_size, num_secret_audio_files)]
 
-#         C_prime = encoder_model.predict([batch_S, batch_C])
+    #         C_prime = encoder_model.predict([batch_S, batch_C])
 
-#         ae_loss.append(autoencoder_model.train_on_batch(x=[batch_S, batch_C],
-#                                                         y=np.concatenate((secret_audio_files, cover_audio_files), axis=3)))
-#         rev_loss.append(reveal_model.train_on_batch(x=C_prime,
-#                                                     y=batch_S))
+    #         ae_loss.append(autoencoder_model.train_on_batch(x=[batch_S, batch_C],
+    #                                                         y=np.concatenate((secret_audio_files, cover_audio_files), axis=3)))
+    #         rev_loss.append(reveal_model.train_on_batch(x=C_prime,
+    #                                                     y=batch_S))
 
-#         # Update learning rate
-#         K.set_value(autoencoder_model.optimizer.lr, lr_schedule(epoch))
-#         K.set_value(reveal_model.optimizer.lr, lr_schedule(epoch))
-#         t.set_description('Epoch {} | Batch: {} of {}. Loss AE {:10.2f} | Loss Rev {:10.2f}'.format(
-#             epoch + 1, idx, num_secret_audio_files, np.mean(ae_loss), np.mean(rev_loss)))
-#     loss_history.append(np.mean(ae_loss))
+    #         # Update learning rate
+    #         K.set_value(autoencoder_model.optimizer.lr, lr_schedule(epoch))
+    #         K.set_value(reveal_model.optimizer.lr, lr_schedule(epoch))
+    #         t.set_description('Epoch {} | Batch: {} of {}. Loss AE {:10.2f} | Loss Rev {:10.2f}'.format(
+    #             epoch + 1, idx, num_secret_audio_files, np.mean(ae_loss), np.mean(rev_loss)))
+    #     loss_history.append(np.mean(ae_loss))
 
-# save model
-autoencoder_model.save_weights(
-    'model-{}.hdf5'.format(datetime.datetime.now().strftime("%Y%m%d_%H%M")))
+    # save model
+    autoencoder_model.save_weights(
+        'model-{}.hdf5'.format(datetime.datetime.now().strftime("%Y%m%d_%H%M")))
+else:
+    autoencoder_model.load_weights(sys.argv[1])
+    print('Model loaded from', sys.argv[1])
