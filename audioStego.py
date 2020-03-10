@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
-# This Python 3 environment comes with many helpful analytics libraries installed
-# It is defined by the kaggle/python docker image: https://github.com/kaggle/docker-python
-# For example, here's several helpful packages to load in
-
 import datetime
 import numpy as np
 import os
@@ -73,8 +69,6 @@ def pad(dataset=train_data, padding_mode='CONSTANT'):
     return padded_specgrams
 
 # Convert audio to spectrogram using Short Time Fourier Transform (STFT)
-
-
 def load_dataset_mel_spectogram(num_audio_files=100, dataset=train_data):
     """
     Loads training and test datasets, from TIMIT and convert into spectrogram using STFT
@@ -140,15 +134,11 @@ summary.print_(summary.summarize(muppy.get_objects()))
 beta = 1.0
 
 # Loss for reveal network
-
-
 def rev_loss_fn(s_true, s_pred):
     # Loss for reveal network is: beta * |S-S'|
     return beta * losses.mean_squared_error(s_true, s_pred)
 
 # Loss for the full model, used for preparation and hidding networks
-
-
 def full_loss(y_true, y_pred):
     # print('y_true', y_true)
     # print('y_pred', y_pred)
@@ -165,8 +155,6 @@ def full_loss(y_true, y_pred):
 
 # Returns the encoder as a Keras model, composed by Preparation and Hiding
 # Networks.
-
-
 def make_encoder(input_size):
     input_S = Input(shape=(input_size))
     input_C = Input(shape=(input_size))
@@ -241,8 +229,6 @@ def make_encoder(input_size):
                  name='Encoder')
 
 # Returns the decoder as a Keras model, composed by the Reveal Network
-
-
 def make_decoder(input_size):
 
     # Reveal network
@@ -301,8 +287,6 @@ def make_decoder(input_size):
                  name='Decoder')
 
 # Full model.
-
-
 def make_model(input_size):
     input_S = Input(shape=(input_size))
     input_C = Input(shape=(input_size))
