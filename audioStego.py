@@ -24,6 +24,7 @@ from pympler import muppy, summary
 import logging as log
 log.basicConfig(format='%(asctime)s.%(msecs)06d: %(message)s',
                 datefmt='%Y-%m-%d %I:%M:%S', level=log.INFO)
+log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
 # regulate tensorflow verbosity
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
@@ -54,6 +55,8 @@ log.info('Sample rate of waveform: {}'.format(sample_rate))
 del audio
 del sample_rate
 
+# tensorboard visualisation
+tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
 
 def pad(dataset=train_data, padding_mode='CONSTANT'):
 
@@ -309,7 +312,7 @@ def make_model(input_size):
     encoder = make_encoder(input_size)
 
     decoder = make_decoder(input_size)
-    decoder.compile(optimizer='adam', loss=rev_loss_fn)
+    decoder.compile(optimizer='adam', loss=rev_loss_fn, metrics=['accuracy'])
     decoder.trainable = False
 
     output_Cprime = encoder([input_S, input_C])
@@ -317,8 +320,8 @@ def make_model(input_size):
     output_Sprime = decoder(output_Cprime)
 
     autoencoder = Model(inputs=[input_S, input_C],
-                        outputs=concatenate([output_Sprime, output_Cprime]))
-    autoencoder.compile(optimizer='adam', loss=full_loss)
+                        outputs=tf.concat([output_Sprime, output_Cprime], axis=3))
+    autoencoder.compile(optimizer='adam', loss=full_loss, metrics=['accuracy'])
 
     return encoder, decoder, autoencoder
 
@@ -339,10 +342,11 @@ def lr_schedule(epoch_idx):
     else:
         return 0.00003
 
+x_data = [secret_audio_files, cover_audio_files]
+y_data = tf.concat((secret_audio_files, cover_audio_files), axis=3)
 
 if len(sys.argv) == 1:
-    autoencoder_model.fit(x=[secret_audio_files, cover_audio_files], y=np.concatenate(
-        (secret_audio_files, cover_audio_files), axis=3), epochs=epochs, batch_size=batch_size)
+    autoencoder_model.fit(x=x_data, y=y_data, epochs=epochs, batch_size=batch_size, callbacks=[tensorboard_callback])
     # num_secret_audio_files = secret_audio_files.shape[0]
     # loss_history = []
     # for epoch in range(epochs):

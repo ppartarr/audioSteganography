@@ -2,3 +2,4 @@ data/
 venv/
 .vscode/
 *.hdf5
+logs/
