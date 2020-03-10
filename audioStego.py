@@ -25,8 +25,8 @@ from tensorflow.keras.preprocessing import image
 from tensorflow.python.framework.ops import disable_eager_execution
 from tensorflow.keras import losses
 
-# disable tensorflow verbosity
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+# regulate tensorflow verbosity
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
 
 # Import data from TIMIT dataset
 data_dir = "data"
