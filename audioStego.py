@@ -315,7 +315,7 @@ def make_model(input_size):
     output_Sprime = decoder(output_Cprime)
 
     autoencoder = Model(inputs=[input_S, input_C],
-                        outputs=tf.concat([output_Sprime, output_Cprime], axis=3))
+                        outputs=concatenate([output_Sprime, output_Cprime]))
     autoencoder.compile(optimizer='adam', loss=full_loss, metrics=['accuracy'])
 
     return encoder, decoder, autoencoder
@@ -338,7 +338,7 @@ def lr_schedule(epoch_idx):
         return 0.00003
 
 x_data = [secret_audio_files, cover_audio_files]
-y_data = tf.concat((secret_audio_files, cover_audio_files), axis=3)
+y_data = np.concatenate((secret_audio_files, cover_audio_files), axis=3)
 
 if len(sys.argv) == 1:
     autoencoder_model.fit(x=x_data, y=y_data, epochs=epochs, batch_size=batch_size, callbacks=[tensorboard_callback])
@@ -359,7 +359,7 @@ if len(sys.argv) == 1:
     #         C_prime = encoder_model.predict([batch_S, batch_C])
 
     #         ae_loss.append(autoencoder_model.train_on_batch(x=[batch_S, batch_C],
-    #                                                         y=np.concatenate((secret_audio_files, cover_audio_files), axis=3)))
+    #                                                         y=np.concatenate((batch_S, batch_C), axis=3)))
     #         rev_loss.append(reveal_model.train_on_batch(x=C_prime,
     #                                                     y=batch_S))
 
