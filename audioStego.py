@@ -132,44 +132,6 @@ cover_audio_files = x_train[x_train.shape[0] // 2:]
 
 summary.print_(summary.summarize(muppy.get_objects()))
 
-# Variable used to weight the losses of the secret and cover images (See
-# paper for more details)
-beta = 1.0
-
-
-def rev_loss_fn(s_true, s_pred):
-    """ Loss for reveal network """
-    # Loss for reveal network is: beta * |S-S'|
-    return beta * losses.mean_squared_error(s_true, s_pred)
-
-
-def full_loss(y_true, y_pred):
-    """ Loss for the full model, used for preparation and hidding networks """
-    # Loss for the full model is: |C-C'| + beta * |S-S'|
-    s_true, c_true = y_true[..., 0:num_mel_filters], y_true[...,
-                                                            num_mel_filters:num_mel_filters * 2]
-    s_pred, c_pred = y_pred[..., 0:num_mel_filters], y_pred[...,
-                                                            num_mel_filters:num_mel_filters * 2]
-
-    s_loss = rev_loss_fn(s_true, s_pred)
-    c_loss = losses.mean_squared_error(c_true, c_pred)
-
-    print("y_true: {}".format(y_true))
-    print("y_pred: {}".format(y_pred))
-
-    print("s_loss: {}".format(s_loss))
-    print("c_true: {}".format(c_true))
-
-    print("s_pred: {}".format(s_pred))
-    print("c_pred: {}".format(c_pred))
-
-    print("s_loss: {}".format(s_loss))
-    print("c_loss: {}".format(c_loss))
-
-    print("full loss: {}".format(s_loss + c_loss))
-
-    return s_loss + c_loss
-
 
 def make_encoder(input_size):
     """ Returns the encoder as a Keras model, composed by Preparation and Hiding Networks """
@@ -315,7 +277,8 @@ def make_model(input_size):
     encoder = make_encoder(input_size)
 
     decoder = make_decoder(input_size)
-    decoder.compile(optimizer='adam', loss=rev_loss_fn, metrics=['accuracy'])
+    decoder.compile(optimizer='adam',
+                    loss=losses.mean_squared_error, metrics=['accuracy'])
     decoder.trainable = False
 
     output_Cprime = encoder([input_S, input_C])
@@ -324,7 +287,8 @@ def make_model(input_size):
 
     autoencoder = Model(inputs=[input_S, input_C],
                         outputs=concatenate([output_Sprime, output_Cprime]))
-    autoencoder.compile(optimizer='adam', loss=full_loss, metrics=['accuracy'])
+    autoencoder.compile(
+        optimizer='adam', loss=losses.mean_squared_error, metrics=['accuracy'])
 
     return encoder, decoder, autoencoder
 
