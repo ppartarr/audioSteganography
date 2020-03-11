@@ -53,7 +53,9 @@ del audio
 del sample_rate
 
 # tensorboard visualisation
-tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
+tensorboard_callback = tf.keras.callbacks.TensorBoard(
+    log_dir=log_dir, histogram_freq=1)
+
 
 def pad(dataset=train_data, padding_mode='CONSTANT'):
 
@@ -69,7 +71,7 @@ def pad(dataset=train_data, padding_mode='CONSTANT'):
 
     return padded_specgrams
 
-# Convert audio to spectrogram using Short Time Fourier Transform (STFT)
+
 def load_dataset_mel_spectogram(num_audio_files=100, dataset=train_data):
     """
     Loads training and test datasets, from TIMIT and convert into spectrogram using STFT
@@ -134,16 +136,20 @@ summary.print_(summary.summarize(muppy.get_objects()))
 # paper for more details)
 beta = 1.0
 
-# Loss for reveal network
+
 def rev_loss_fn(s_true, s_pred):
+    """ Loss for reveal network """
     # Loss for reveal network is: beta * |S-S'|
     return beta * losses.mean_squared_error(s_true, s_pred)
 
-# Loss for the full model, used for preparation and hidding networks
+
 def full_loss(y_true, y_pred):
+    """ Loss for the full model, used for preparation and hidding networks """
     # Loss for the full model is: |C-C'| + beta * |S-S'|
-    s_true, c_true = y_true[..., 0:num_mel_filters], y_true[..., num_mel_filters:num_mel_filters*2]
-    s_pred, c_pred = y_pred[..., 0:num_mel_filters], y_pred[..., num_mel_filters:num_mel_filters*2]
+    s_true, c_true = y_true[..., 0:num_mel_filters], y_true[...,
+                                                            num_mel_filters:num_mel_filters * 2]
+    s_pred, c_pred = y_pred[..., 0:num_mel_filters], y_pred[...,
+                                                            num_mel_filters:num_mel_filters * 2]
 
     s_loss = rev_loss_fn(s_true, s_pred)
     c_loss = losses.mean_squared_error(c_true, c_pred)
@@ -159,76 +165,76 @@ def full_loss(y_true, y_pred):
 
     print("s_loss: {}".format(s_loss))
     print("c_loss: {}".format(c_loss))
-    
+
     print("full loss: {}".format(s_loss + c_loss))
 
     return s_loss + c_loss
 
-# Returns the encoder as a Keras model, composed by Preparation and Hiding
-# Networks.
+
 def make_encoder(input_size):
+    """ Returns the encoder as a Keras model, composed by Preparation and Hiding Networks """
     input_S = Input(shape=(input_size))
     input_C = Input(shape=(input_size))
     # print(input_S.shape)
     # print(input_C.shape)
 
     # Preparation Network
-    x3 = Conv2D(num_mel_filters//2, (num_mel_filters), padding='same', activation='relu',
+    x3 = Conv2D(num_mel_filters // 2, (num_mel_filters), padding='same', activation='relu',
                 name='conv_prep0_3x3')(input_S)
-    x4 = Conv2D(num_mel_filters//4, (num_mel_filters//2), padding='same', activation='relu',
+    x4 = Conv2D(num_mel_filters // 4, (num_mel_filters // 2), padding='same', activation='relu',
                 name='conv_prep0_4x4')(input_S)
-    x5 = Conv2D(num_mel_filters//8, (num_mel_filters//4), padding='same', activation='relu',
+    x5 = Conv2D(num_mel_filters // 8, (num_mel_filters // 4), padding='same', activation='relu',
                 name='conv_prep0_5x5')(input_S)
     x = concatenate([x3, x4, x5])
 
-    x3 = Conv2D(num_mel_filters//2, (num_mel_filters), padding='same',
+    x3 = Conv2D(num_mel_filters // 2, (num_mel_filters), padding='same',
                 activation='relu', name='conv_prep1_3x3')(x)
-    x4 = Conv2D(num_mel_filters//4, (num_mel_filters//2), padding='same',
+    x4 = Conv2D(num_mel_filters // 4, (num_mel_filters // 2), padding='same',
                 activation='relu', name='conv_prep1_4x4')(x)
-    x5 = Conv2D(num_mel_filters//8, (num_mel_filters//4), padding='same',
+    x5 = Conv2D(num_mel_filters // 8, (num_mel_filters // 4), padding='same',
                 activation='relu', name='conv_prep1_5x5')(x)
     x = concatenate([x3, x4, x5])
 
     x = concatenate([input_C, x])
 
     # Hiding network
-    x3 = Conv2D(num_mel_filters//2, (2, num_mel_filters), padding='same', activation='relu',
+    x3 = Conv2D(num_mel_filters // 2, (2, num_mel_filters), padding='same', activation='relu',
                 name='conv_hid0_3x3')(x)
-    x4 = Conv2D(num_mel_filters//4, (num_mel_filters//2), padding='same', activation='relu',
+    x4 = Conv2D(num_mel_filters // 4, (num_mel_filters // 2), padding='same', activation='relu',
                 name='conv_hid0_4x4')(x)
-    x5 = Conv2D(num_mel_filters//8, (num_mel_filters//4), padding='same', activation='relu',
+    x5 = Conv2D(num_mel_filters // 8, (num_mel_filters // 4), padding='same', activation='relu',
                 name='conv_hid0_5x5')(x)
     x = concatenate([x3, x4, x5])
 
-    x3 = Conv2D(num_mel_filters//2, (2, num_mel_filters), padding='same',
+    x3 = Conv2D(num_mel_filters // 2, (2, num_mel_filters), padding='same',
                 activation='relu', name='conv_hid1_3x3')(x)
-    x4 = Conv2D(num_mel_filters//4, (num_mel_filters//2), padding='same', activation='relu',
+    x4 = Conv2D(num_mel_filters // 4, (num_mel_filters // 2), padding='same', activation='relu',
                 name='conv_hid1_4x4')(x)
-    x5 = Conv2D(num_mel_filters//8, (num_mel_filters//4), padding='same', activation='relu',
+    x5 = Conv2D(num_mel_filters // 8, (num_mel_filters // 4), padding='same', activation='relu',
                 name='conv_hid1_5x5')(x)
     x = concatenate([x3, x4, x5])
 
-    x3 = Conv2D(num_mel_filters//2, (2, num_mel_filters), padding='same',
+    x3 = Conv2D(num_mel_filters // 2, (2, num_mel_filters), padding='same',
                 activation='relu', name='conv_hid2_3x3')(x)
-    x4 = Conv2D(num_mel_filters//4, (2, num_mel_filters), padding='same',
+    x4 = Conv2D(num_mel_filters // 4, (2, num_mel_filters), padding='same',
                 activation='relu', name='conv_hid2_4x4')(x)
-    x5 = Conv2D(num_mel_filters//8, (2, num_mel_filters), padding='same',
+    x5 = Conv2D(num_mel_filters // 8, (2, num_mel_filters), padding='same',
                 activation='relu', name='conv_hid2_5x5')(x)
     x = concatenate([x3, x4, x5])
 
-    x3 = Conv2D(num_mel_filters//2, (2, num_mel_filters), padding='same',
+    x3 = Conv2D(num_mel_filters // 2, (2, num_mel_filters), padding='same',
                 activation='relu', name='conv_hid3_3x3')(x)
-    x4 = Conv2D(num_mel_filters//4, (num_mel_filters//2), padding='same', activation='relu',
+    x4 = Conv2D(num_mel_filters // 4, (num_mel_filters // 2), padding='same', activation='relu',
                 name='conv_hid3_4x4')(x)
-    x5 = Conv2D(num_mel_filters//8, (num_mel_filters//4), padding='same', activation='relu',
+    x5 = Conv2D(num_mel_filters // 8, (num_mel_filters // 4), padding='same', activation='relu',
                 name='conv_hid3_5x5')(x)
     x = concatenate([x3, x4, x5])
 
-    x3 = Conv2D(num_mel_filters//2, (2, num_mel_filters), padding='same',
+    x3 = Conv2D(num_mel_filters // 2, (2, num_mel_filters), padding='same',
                 activation='relu', name='conv_hid4_3x3')(x)
-    x4 = Conv2D(num_mel_filters//4, (num_mel_filters//2), padding='same', activation='relu',
+    x4 = Conv2D(num_mel_filters // 4, (num_mel_filters // 2), padding='same', activation='relu',
                 name='conv_hid4_4x4')(x)
-    x5 = Conv2D(num_mel_filters//8, (num_mel_filters//4), padding='same', activation='relu',
+    x5 = Conv2D(num_mel_filters // 8, (num_mel_filters // 4), padding='same', activation='relu',
                 name='conv_hid4_5x5')(x)
     x = concatenate([x3, x4, x5])
 
@@ -239,9 +245,9 @@ def make_encoder(input_size):
                  outputs=output_Cprime,
                  name='Encoder')
 
-# Returns the decoder as a Keras model, composed by the Reveal Network
-def make_decoder(input_size):
 
+def make_decoder(input_size):
+    """ Returns the decoder as a Keras model, composed by the Reveal Network """
     # Reveal network
     reveal_input = Input(shape=(input_size))
     # print(reveal_input.shape)
@@ -250,43 +256,43 @@ def make_decoder(input_size):
     input_with_noise = GaussianNoise(0.01, name='output_C_noise')(reveal_input)
     # print(input_with_noise.shape)
 
-    x3 = Conv2D(num_mel_filters//2, (2, num_mel_filters), padding='same', activation='relu',
+    x3 = Conv2D(num_mel_filters // 2, (2, num_mel_filters), padding='same', activation='relu',
                 name='conv_rev0_3x3')(input_with_noise)
-    x4 = Conv2D(num_mel_filters//4, (num_mel_filters//2), padding='same', activation='relu',
+    x4 = Conv2D(num_mel_filters // 4, (num_mel_filters // 2), padding='same', activation='relu',
                 name='conv_rev0_4x4')(input_with_noise)
-    x5 = Conv2D(num_mel_filters//8, (num_mel_filters//4), padding='same', activation='relu',
+    x5 = Conv2D(num_mel_filters // 8, (num_mel_filters // 4), padding='same', activation='relu',
                 name='conv_rev0_5x5')(input_with_noise)
     x = concatenate([x3, x4, x5])
 
-    x3 = Conv2D(num_mel_filters//2, (2, num_mel_filters), padding='same',
+    x3 = Conv2D(num_mel_filters // 2, (2, num_mel_filters), padding='same',
                 activation='relu', name='conv_rev1_3x3')(x)
-    x4 = Conv2D(num_mel_filters//4, (num_mel_filters//2), padding='same', activation='relu',
+    x4 = Conv2D(num_mel_filters // 4, (num_mel_filters // 2), padding='same', activation='relu',
                 name='conv_rev1_4x4')(x)
-    x5 = Conv2D(num_mel_filters//8, (num_mel_filters//4), padding='same', activation='relu',
+    x5 = Conv2D(num_mel_filters // 8, (num_mel_filters // 4), padding='same', activation='relu',
                 name='conv_rev1_5x5')(x)
     x = concatenate([x3, x4, x5])
 
-    x3 = Conv2D(num_mel_filters//2, (2, num_mel_filters), padding='same',
+    x3 = Conv2D(num_mel_filters // 2, (2, num_mel_filters), padding='same',
                 activation='relu', name='conv_rev2_3x3')(x)
-    x4 = Conv2D(num_mel_filters//4, (num_mel_filters//2), padding='same', activation='relu',
+    x4 = Conv2D(num_mel_filters // 4, (num_mel_filters // 2), padding='same', activation='relu',
                 name='conv_rev2_4x4')(x)
-    x5 = Conv2D(num_mel_filters//8, (num_mel_filters//4), padding='same', activation='relu',
+    x5 = Conv2D(num_mel_filters // 8, (num_mel_filters // 4), padding='same', activation='relu',
                 name='conv_rev2_5x5')(x)
     x = concatenate([x3, x4, x5])
 
-    x3 = Conv2D(num_mel_filters//2, (2, num_mel_filters), padding='same',
+    x3 = Conv2D(num_mel_filters // 2, (2, num_mel_filters), padding='same',
                 activation='relu', name='conv_rev3_3x3')(x)
-    x4 = Conv2D(num_mel_filters//4, (num_mel_filters//2), padding='same', activation='relu',
+    x4 = Conv2D(num_mel_filters // 4, (num_mel_filters // 2), padding='same', activation='relu',
                 name='conv_rev3_4x4')(x)
-    x5 = Conv2D(num_mel_filters//8, (num_mel_filters//4), padding='same', activation='relu',
+    x5 = Conv2D(num_mel_filters // 8, (num_mel_filters // 4), padding='same', activation='relu',
                 name='conv_rev3_5x5')(x)
     x = concatenate([x3, x4, x5])
 
-    x3 = Conv2D(num_mel_filters//2, (2, num_mel_filters), padding='same',
+    x3 = Conv2D(num_mel_filters // 2, (2, num_mel_filters), padding='same',
                 activation='relu', name='conv_rev4_3x3')(x)
-    x4 = Conv2D(num_mel_filters//4, (num_mel_filters//2), padding='same', activation='relu',
+    x4 = Conv2D(num_mel_filters // 4, (num_mel_filters // 2), padding='same', activation='relu',
                 name='conv_rev4_4x4')(x)
-    x5 = Conv2D(num_mel_filters//8, (num_mel_filters//4), padding='same', activation='relu',
+    x5 = Conv2D(num_mel_filters // 8, (num_mel_filters // 4), padding='same', activation='relu',
                 name='conv_rev4_5x5')(x)
     x = concatenate([x3, x4, x5])
 
@@ -297,8 +303,10 @@ def make_decoder(input_size):
                  outputs=output_Sprime,
                  name='Decoder')
 
-# Full model.
+
 def make_model(input_size):
+    """ Full model """
+
     input_S = Input(shape=(input_size))
     input_C = Input(shape=(input_size))
     # print(input_S.shape)
@@ -337,11 +345,13 @@ def lr_schedule(epoch_idx):
     else:
         return 0.00003
 
+
 x_data = [secret_audio_files, cover_audio_files]
 y_data = np.concatenate((secret_audio_files, cover_audio_files), axis=3)
 
 if len(sys.argv) == 1:
-    autoencoder_model.fit(x=x_data, y=y_data, epochs=epochs, batch_size=batch_size, callbacks=[tensorboard_callback])
+    autoencoder_model.fit(x=x_data, y=y_data, epochs=epochs,
+                          batch_size=batch_size, callbacks=[tensorboard_callback])
     # num_secret_audio_files = secret_audio_files.shape[0]
     # loss_history = []
     # for epoch in range(epochs):
