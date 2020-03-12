@@ -29,8 +29,8 @@ shape = (1, args['length'], constants.num_mel_filters)
 mdl = model.steg_model(shape, pretrain=False)
 mdl.load_weights(args['model'])
 
-secret_audio = utils.convert_wav_to_mel_spec(args['secret_audio'])
-cover_audio = utils.convert_wav_to_mel_spec(args['cover_audio'])
+secret_audio = utils.convert_wav_to_mel_spec(args['secret'])
+cover_audio = utils.convert_wav_to_mel_spec(args['cover'])
 
 print(np.array([secret_audio]).shape)
 print(secret_audio.shape)
