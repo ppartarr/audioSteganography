@@ -8,6 +8,8 @@ import constants
 import utils
 import numpy as np
 import tensorflow as tf
+import shutil
+import os
 
 log.basicConfig(format='%(asctime)s.%(msecs)06d: %(message)s',
                 datefmt='%Y-%m-%d %H:%M:%S', level=log.INFO)
@@ -19,23 +21,21 @@ parser.add_argument("--model", required=True, help="path to trained model")
 parser.add_argument("--secret", required=True,
                     help="path to secret audio file")
 parser.add_argument("--cover", required=True, help="path to audio file")
-parser.add_argument("--length", required=True,
-                    help="length of the spectrogram", type=int)
+parser.add_argument("--length", required=True, type=int,
+                    help="length of the spectrogram")
 args = vars(parser.parse_args())
 
-# load model
-print(args['length'])
+# config
 shape = (1, args['length'], constants.num_mel_filters)
+output_dir = os.path.join('predictions', args['model'])
+
+# load model
 mdl = model.steg_model(shape, pretrain=False)
 mdl.load_weights(args['model'])
 
+# convert wav to spectrograms
 secret_audio = utils.convert_wav_to_mel_spec(args['secret'])
 cover_audio = utils.convert_wav_to_mel_spec(args['cover'])
-
-print(np.array([secret_audio]).shape)
-print(secret_audio.shape)
-print(cover_audio.shape)
-
 dataset = [secret_audio, cover_audio]
 secret_audio = utils.pad_single(secret_audio, args['length'])
 cover_audio = utils.pad_single(cover_audio, args['length'])
@@ -44,9 +44,27 @@ cover_audio = utils.pad_single(cover_audio, args['length'])
 secret_out, cover_out = mdl.predict(
     [np.array([secret_audio]), np.array([cover_audio])])
 
-print(type(secret_out))
-wav = utils.convert_mel_spec_to_wav(secret_out)
-audio = tf.audio.decode_wav(wav)
+# build output dir
+os.makedirs(output_dir, exist_ok=True)
+shutil.copyfile(args['cover'], os.path.join(
+    output_dir, 'input_cover_' + os.path.basename(args['cover'])), follow_symlinks=True)
+shutil.copyfile(args['secret'], os.path.join(
+    output_dir, 'input_secret_' + os.path.basename(args['secret'])), follow_symlinks=True)
+
+# convert output spectrograms to wav
+for output in [
+    {
+        'specgram': cover_out,
+        'fname': 'output_cover_' + os.path.basename(args['cover'])
+    }, {
+        'specgram': secret_out,
+        'fname': 'output_secret_' + os.path.basename(args['secret'])
+    }
+]:
+    wav = utils.convert_mel_spec_to_wav(output['specgram'])
+    full_fname = os.path.join(output_dir, output['fname'])
+    tf.io.write_file(full_fname, wav, name=None)
+    log.info('Spectrogram converted to wav: {}'.format(full_fname))
 
 # play audio
 # IPython.display.Audio(wav)
