@@ -7,30 +7,42 @@ import os
 import constants
 
 
-def pad_single(specgram, length, padding_mode='CONSTANT'):
+def pad(
+        dataset=[],
+        padding_mode='CONSTANT'):
+    return pad_to(max([specgram.shape[1] for specgram in dataset]),
+                  dataset=dataset, padding_mode=padding_mode)
+
+
+def pad_to(
+        length,
+        dataset=[],
+        padding_mode='CONSTANT'):
+    padded_specgrams = []
+    for specgram in dataset:
+        padded_specgrams.append(pad_single(
+            specgram, length, padding_mode=padding_mode))
+    return padded_specgrams
+
+
+def pad_single(
+        specgram,
+        length,
+        padding_mode='CONSTANT'):
     pad_by = length - specgram.shape[1]
     paddings = tf.constant([[0, 0], [0, pad_by], [0, 0]])
     specgram_pad = tf.pad(specgram, paddings, padding_mode)
     return specgram_pad.numpy()
 
 
-def pad(dataset=[], padding_mode='CONSTANT'):
-    return pad2(max([specgram.shape[1] for specgram in dataset]), dataset=dataset)
-
-
-def pad2(length, dataset=[], padding_mode='CONSTANT'):
-    padded_specgrams = []
-
-    for specgram in dataset:
-        padded_specgrams.append(pad_single(specgram, length))
-
-    return padded_specgrams
-
-
-def convert_wav_to_mel_spec(path_to_wav,
-                            num_mel_filters=constants.num_mel_filters,
-                            lower_edge_hertz=constants.lower_edge_hertz,
-                            upper_edge_hertz=8000.0, frame_length=1024, frame_step=256, fft_length=1024):
+def convert_wav_to_mel_spec(
+        path_to_wav,
+        num_mel_filters=constants.num_mel_filters,
+        lower_edge_hertz=constants.lower_edge_hertz,
+        upper_edge_hertz=8000.0,
+        frame_length=1024,
+        frame_step=256,
+        fft_length=1024):
     # extract audio and sample rate from WAV file
     raw_audio = tf.io.read_file(path_to_wav)
     audio, sample_rate = tf.audio.decode_wav(raw_audio)
@@ -55,7 +67,15 @@ def convert_wav_to_mel_spec(path_to_wav,
     return mel_spectrograms
 
 
-def convert_mel_spec_to_wav(specgrams, sample_rate=16000, num_mel_filters=32, lower_edge_hertz=20.0, upper_edge_hertz=8000.0, frame_length=1024, frame_step=256, fft_length=1024):
+def convert_mel_spec_to_wav(
+        specgrams,
+        sample_rate=16000,
+        num_mel_filters=32,
+        lower_edge_hertz=20.0,
+        upper_edge_hertz=8000.0,
+        frame_length=1024,
+        frame_step=256,
+        fft_length=1024):
     # unwrap the mel-scale spectrogram into the linear scale
     num_spectrogram_bins = specgrams.shape[-1]
     linear_to_mel_weight_matrix = tf.signal.linear_to_mel_weight_matrix(
@@ -69,7 +89,13 @@ def convert_mel_spec_to_wav(specgrams, sample_rate=16000, num_mel_filters=32, lo
     return tf.audio.encode_wav(inverse_stft, sample_rate)
 
 
-def load_dataset_mel_spectogram(num_audio_files=100, dataset=[], num_mel_filters=32, data_dir="data", lower_edge_hertz=20.0, upper_edge_hertz=8000.0):
+def load_dataset_mel_spectogram(
+        dataset=[],
+        num_audio_files=100,
+        num_mel_filters=32,
+        data_dir="data",
+        lower_edge_hertz=20.0,
+        upper_edge_hertz=8000.0):
     """
     Loads training and test datasets, from TIMIT and convert into spectrogram using STFT
     Arguments:

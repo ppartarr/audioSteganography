@@ -53,9 +53,9 @@ del sample_rate
 #   x is the number of 64ms spectrograms with 716% overlap
 #   128 is the number of mel filters
 x_train = utils.load_dataset_mel_spectogram(
-    num_audio_files=constants.num_samples, dataset=train_data, num_mel_filters=constants.num_mel_filters, data_dir=data_dir)
+    dataset=train_data, num_audio_files=constants.num_samples, num_mel_filters=constants.num_mel_filters, data_dir=data_dir)
 x_test = utils.load_dataset_mel_spectogram(
-    num_audio_files=constants.num_samples, dataset=test_data, num_mel_filters=constants.num_mel_filters, data_dir=data_dir)
+    dataset=test_data, num_audio_files=constants.num_samples, num_mel_filters=constants.num_mel_filters, data_dir=data_dir)
 del train_csv
 del train_data
 del test_csv
