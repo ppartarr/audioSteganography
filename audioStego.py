@@ -9,6 +9,7 @@ import sys
 
 # tensorflow
 import tensorflow as tf
+from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint
 from tensorflow.keras.layers import Input, Conv2D, concatenate, GaussianNoise
 from tensorflow.keras.models import Model
 from tensorflow.keras import losses
@@ -52,10 +53,6 @@ log.info('Shape of the audio file: {}'.format(audio.shape))
 log.info('Sample rate of waveform: {}'.format(sample_rate))
 del audio
 del sample_rate
-
-# tensorboard visualisation
-tensorboard_callback = tf.keras.callbacks.TensorBoard(
-    log_dir=log_dir, histogram_freq=1)
 
 
 def pad(dataset=train_data, padding_mode='CONSTANT'):
@@ -316,35 +313,15 @@ x_data = [secret_audio_files, cover_audio_files]
 y_data = np.concatenate((secret_audio_files, cover_audio_files), axis=3)
 
 if len(sys.argv) == 1:
+    # callbacks
+    callback_tensorboard = TensorBoard(
+        log_dir=log_dir, histogram_freq=1)
+    callback_checkpoint = ModelCheckpoint(
+        log_dir, monitor='loss', verbose=1, save_best_only=True, mode='max')
+
+    # train model
     autoencoder_model.fit(x=x_data, y=y_data, epochs=epochs,
-                          batch_size=batch_size, callbacks=[tensorboard_callback])
-    # num_secret_audio_files = secret_audio_files.shape[0]
-    # loss_history = []
-    # for epoch in range(epochs):
-    #     np.random.shuffle(secret_audio_files)
-    #     np.random.shuffle(cover_audio_files)
-
-    #     t = tqdm(range(0, num_secret_audio_files, batch_size), mininterval=0)
-    #     ae_loss = []
-    #     rev_loss = []
-    #     for idx in t:
-
-    #         batch_S = secret_audio_files[idx:min(idx + batch_size, num_secret_audio_files)]
-    #         batch_C = cover_audio_files[idx:min(idx + batch_size, num_secret_audio_files)]
-
-    #         C_prime = encoder_model.predict([batch_S, batch_C])
-
-    #         ae_loss.append(autoencoder_model.train_on_batch(x=[batch_S, batch_C],
-    #                                                         y=np.concatenate((batch_S, batch_C), axis=3)))
-    #         rev_loss.append(reveal_model.train_on_batch(x=C_prime,
-    #                                                     y=batch_S))
-
-    #         # Update learning rate
-    #         K.set_value(autoencoder_model.optimizer.lr, lr_schedule(epoch))
-    #         K.set_value(reveal_model.optimizer.lr, lr_schedule(epoch))
-    #         t.set_description('Epoch {} | Batch: {} of {}. Loss AE {:10.2f} | Loss Rev {:10.2f}'.format(
-    #             epoch + 1, idx, num_secret_audio_files, np.mean(ae_loss), np.mean(rev_loss)))
-    #     loss_history.append(np.mean(ae_loss))
+                          batch_size=batch_size, callbacks=[callback_tensorboard, callback_checkpoint])
 
     # save model
     model_hdf5 = 'model-{}.hdf5'.format(
