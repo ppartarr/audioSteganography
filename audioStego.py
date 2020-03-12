@@ -13,7 +13,6 @@ from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint
 from tensorflow.keras.layers import Input, Conv2D, concatenate, GaussianNoise
 from tensorflow.keras.models import Model
 from tensorflow.keras import losses
-from tensorflow.keras.optimizers import SGD
 
 # memory investigation
 from pympler import muppy, summary
@@ -21,7 +20,7 @@ from pympler import muppy, summary
 # logging
 import logging as log
 log.basicConfig(format='%(asctime)s.%(msecs)06d: %(message)s',
-                datefmt='%Y-%m-%d %I:%M:%S', level=log.INFO)
+                datefmt='%Y-%m-%d %H:%M:%S', level=log.INFO)
 log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
 # regulate tensorflow verbosity
@@ -35,7 +34,7 @@ train_data = train_csv[train_csv.path_from_data_dir.str.contains(
 test_csv = pd.read_csv(os.path.join(data_dir, "test_data.csv"))
 test_data = test_csv[test_csv.path_from_data_dir.str.contains(
     'WAV.wav', na=False)]
-epochs = 3
+epochs = 100
 batch_size = 32
 num_samples = 1000
 sample_rate = 16000
@@ -131,171 +130,166 @@ cover_audio_files = x_train[x_train.shape[0] // 2:]
 summary.print_(summary.summarize(muppy.get_objects()))
 
 
-def make_encoder(input_size):
-    """ Returns the encoder as a Keras model, composed by Preparation and Hiding Networks """
-    input_S = Input(shape=(input_size))
-    input_C = Input(shape=(input_size))
-    # print(input_S.shape)
-    # print(input_C.shape)
+def steg_model(input_shape, pretrain=False):
 
-    # Preparation Network
-    x3 = Conv2D(num_mel_filters // 2, (num_mel_filters), padding='same', activation='sigmoid',
-                name='conv_prep0_3x3')(input_S)
-    x4 = Conv2D(num_mel_filters // 4, (num_mel_filters // 2), padding='same', activation='sigmoid',
-                name='conv_prep0_4x4')(input_S)
-    x5 = Conv2D(num_mel_filters // 8, (num_mel_filters // 4), padding='same', activation='sigmoid',
-                name='conv_prep0_5x5')(input_S)
-    x = concatenate([x3, x4, x5])
+    lossFns = {
+        "hide_conv_f": losses.mean_squared_error,
+        "revl_conv_f": losses.mean_squared_error,
+    }
+    lossWeights = {
+        "hide_conv_f": 1.0,
+        "revl_conv_f": 0.75
+    }
 
-    x3 = Conv2D(num_mel_filters // 2, (num_mel_filters), padding='same',
-                activation='sigmoid', name='conv_prep1_3x3')(x)
-    x4 = Conv2D(num_mel_filters // 4, (num_mel_filters // 2), padding='same',
-                activation='sigmoid', name='conv_prep1_4x4')(x)
-    x5 = Conv2D(num_mel_filters // 8, (num_mel_filters // 4), padding='same',
-                activation='sigmoid', name='conv_prep1_5x5')(x)
-    x = concatenate([x3, x4, x5])
+    # Inputs
+    secret = Input(shape=input_shape, name='secret')
+    cover = Input(shape=input_shape, name='cover')
 
-    x = concatenate([input_C, x])
+    # Prepare network - patches [3*3,4*4,5*5]
+    pconv_3x3 = Conv2D(50, kernel_size=3, padding="same",
+                       activation='relu', name='prep_conv3x3_1')(secret)
+    pconv_3x3 = Conv2D(50, kernel_size=3, padding="same",
+                       activation='relu', name='prep_conv3x3_2')(pconv_3x3)
+    pconv_3x3 = Conv2D(50, kernel_size=3, padding="same",
+                       activation='relu', name='prep_conv3x3_3')(pconv_3x3)
+    pconv_3x3 = Conv2D(50, kernel_size=3, padding="same",
+                       activation='relu', name='prep_conv3x3_4')(pconv_3x3)
 
-    # Hiding network
-    x3 = Conv2D(num_mel_filters // 2, (2, num_mel_filters), padding='same', activation='sigmoid',
-                name='conv_hid0_3x3')(x)
-    x4 = Conv2D(num_mel_filters // 4, (num_mel_filters // 2), padding='same', activation='sigmoid',
-                name='conv_hid0_4x4')(x)
-    x5 = Conv2D(num_mel_filters // 8, (num_mel_filters // 4), padding='same', activation='sigmoid',
-                name='conv_hid0_5x5')(x)
-    x = concatenate([x3, x4, x5])
+    pconv_4x4 = Conv2D(50, kernel_size=4, padding="same",
+                       activation='relu', name='prep_conv4x4_1')(secret)
+    pconv_4x4 = Conv2D(50, kernel_size=4, padding="same",
+                       activation='relu', name='prep_conv4x4_2')(pconv_4x4)
+    pconv_4x4 = Conv2D(50, kernel_size=4, padding="same",
+                       activation='relu', name='prep_conv4x4_3')(pconv_4x4)
+    pconv_4x4 = Conv2D(50, kernel_size=4, padding="same",
+                       activation='relu', name='prep_conv4x4_4')(pconv_4x4)
 
-    x3 = Conv2D(num_mel_filters // 2, (2, num_mel_filters), padding='same',
-                activation='sigmoid', name='conv_hid1_3x3')(x)
-    x4 = Conv2D(num_mel_filters // 4, (num_mel_filters // 2), padding='same', activation='sigmoid',
-                name='conv_hid1_4x4')(x)
-    x5 = Conv2D(num_mel_filters // 8, (num_mel_filters // 4), padding='same', activation='sigmoid',
-                name='conv_hid1_5x5')(x)
-    x = concatenate([x3, x4, x5])
+    pconv_5x5 = Conv2D(50, kernel_size=5, padding="same",
+                       activation='relu', name='prep_conv5x5_1')(secret)
+    pconv_5x5 = Conv2D(50, kernel_size=5, padding="same",
+                       activation='relu', name='prep_conv5x5_2')(pconv_5x5)
+    pconv_5x5 = Conv2D(50, kernel_size=5, padding="same",
+                       activation='relu', name='prep_conv5x5_3')(pconv_5x5)
+    pconv_5x5 = Conv2D(50, kernel_size=5, padding="same",
+                       activation='relu', name='prep_conv5x5_4')(pconv_5x5)
 
-    x3 = Conv2D(num_mel_filters // 2, (2, num_mel_filters), padding='same',
-                activation='sigmoid', name='conv_hid2_3x3')(x)
-    x4 = Conv2D(num_mel_filters // 4, (2, num_mel_filters), padding='same',
-                activation='sigmoid', name='conv_hid2_4x4')(x)
-    x5 = Conv2D(num_mel_filters // 8, (2, num_mel_filters), padding='same',
-                activation='sigmoid', name='conv_hid2_5x5')(x)
-    x = concatenate([x3, x4, x5])
+    pconcat_1 = concatenate(
+        [pconv_3x3, pconv_4x4, pconv_5x5], axis=3, name="prep_concat_1")
 
-    x3 = Conv2D(num_mel_filters // 2, (2, num_mel_filters), padding='same',
-                activation='sigmoid', name='conv_hid3_3x3')(x)
-    x4 = Conv2D(num_mel_filters // 4, (num_mel_filters // 2), padding='same', activation='sigmoid',
-                name='conv_hid3_4x4')(x)
-    x5 = Conv2D(num_mel_filters // 8, (num_mel_filters // 4), padding='same', activation='sigmoid',
-                name='conv_hid3_5x5')(x)
-    x = concatenate([x3, x4, x5])
+    pconv_5x5 = Conv2D(50, kernel_size=5, padding="same",
+                       activation='relu', name='prep_conv5x5_f')(pconcat_1)
+    pconv_4x4 = Conv2D(50, kernel_size=4, padding="same",
+                       activation='relu', name='prep_conv4x4_f')(pconcat_1)
+    pconv_3x3 = Conv2D(50, kernel_size=3, padding="same",
+                       activation='relu', name='prep_conv3x3_f')(pconcat_1)
 
-    x3 = Conv2D(num_mel_filters // 2, (2, num_mel_filters), padding='same',
-                activation='sigmoid', name='conv_hid4_3x3')(x)
-    x4 = Conv2D(num_mel_filters // 4, (num_mel_filters // 2), padding='same', activation='sigmoid',
-                name='conv_hid4_4x4')(x)
-    x5 = Conv2D(num_mel_filters // 8, (num_mel_filters // 4), padding='same', activation='sigmoid',
-                name='conv_hid4_5x5')(x)
-    x = concatenate([x3, x4, x5])
+    pconcat_f1 = concatenate(
+        [pconv_5x5, pconv_4x4, pconv_3x3], axis=3, name="prep_concat_2")
 
-    output_Cprime = Conv2D(num_mel_filters, (2, num_mel_filters), padding='same',
-                           activation='sigmoid', name='output_C')(x)
+    # Hiding network - patches [3*3,4*4,5*5]
+    hconcat_h = concatenate([cover, pconcat_f1], axis=3, name="hide_concat_1")
 
-    return Model(inputs=[input_S, input_C],
-                 outputs=output_Cprime,
-                 name='Encoder')
+    hconv_3x3 = Conv2D(50, kernel_size=3, padding="same",
+                       activation='relu', name='hide_conv3x3_1')(hconcat_h)
+    hconv_3x3 = Conv2D(50, kernel_size=3, padding="same",
+                       activation='relu', name='hide_conv3x3_2')(hconv_3x3)
+    hconv_3x3 = Conv2D(50, kernel_size=3, padding="same",
+                       activation='relu', name='hide_conv3x3_3')(hconv_3x3)
+    hconv_3x3 = Conv2D(50, kernel_size=3, padding="same",
+                       activation='relu', name='hide_conv3x3_4')(hconv_3x3)
 
+    hconv_4x4 = Conv2D(50, kernel_size=4, padding="same",
+                       activation='relu', name='hide_conv4x4_1')(hconcat_h)
+    hconv_4x4 = Conv2D(50, kernel_size=4, padding="same",
+                       activation='relu', name='hide_conv4x4_2')(hconv_4x4)
+    hconv_4x4 = Conv2D(50, kernel_size=4, padding="same",
+                       activation='relu', name='hide_conv4x4_3')(hconv_4x4)
+    hconv_4x4 = Conv2D(50, kernel_size=4, padding="same",
+                       activation='relu', name='hide_conv4x4_4')(hconv_4x4)
 
-def make_decoder(input_size):
-    """ Returns the decoder as a Keras model, composed by the Reveal Network """
-    # Reveal network
-    reveal_input = Input(shape=(input_size))
-    # print(reveal_input.shape)
+    hconv_5x5 = Conv2D(50, kernel_size=5, padding="same",
+                       activation='relu', name='hide_conv5x5_1')(hconcat_h)
+    hconv_5x5 = Conv2D(50, kernel_size=5, padding="same",
+                       activation='relu', name='hide_conv5x5_2')(hconv_5x5)
+    hconv_5x5 = Conv2D(50, kernel_size=5, padding="same",
+                       activation='relu', name='hide_conv5x5_3')(hconv_5x5)
+    hconv_5x5 = Conv2D(50, kernel_size=5, padding="same",
+                       activation='relu', name='hide_conv5x5_4')(hconv_5x5)
 
-    # Adding Gaussian noise with 0.01 standard deviation.
-    input_with_noise = GaussianNoise(0.01, name='output_C_noise')(reveal_input)
-    # print(input_with_noise.shape)
+    hconcat_1 = concatenate(
+        [hconv_3x3, hconv_4x4, hconv_5x5], axis=3, name="hide_concat_2")
 
-    x3 = Conv2D(num_mel_filters // 2, (2, num_mel_filters), padding='same', activation='sigmoid',
-                name='conv_rev0_3x3')(input_with_noise)
-    x4 = Conv2D(num_mel_filters // 4, (num_mel_filters // 2), padding='same', activation='sigmoid',
-                name='conv_rev0_4x4')(input_with_noise)
-    x5 = Conv2D(num_mel_filters // 8, (num_mel_filters // 4), padding='same', activation='sigmoid',
-                name='conv_rev0_5x5')(input_with_noise)
-    x = concatenate([x3, x4, x5])
+    hconv_5x5 = Conv2D(50, kernel_size=5, padding="same",
+                       activation='relu', name='hide_conv5x5_f')(hconcat_1)
+    hconv_4x4 = Conv2D(50, kernel_size=4, padding="same",
+                       activation='relu', name='hide_conv4x4_f')(hconcat_1)
+    hconv_3x3 = Conv2D(50, kernel_size=3, padding="same",
+                       activation='relu', name='hide_conv3x3_f')(hconcat_1)
 
-    x3 = Conv2D(num_mel_filters // 2, (2, num_mel_filters), padding='same',
-                activation='sigmoid', name='conv_rev1_3x3')(x)
-    x4 = Conv2D(num_mel_filters // 4, (num_mel_filters // 2), padding='same', activation='sigmoid',
-                name='conv_rev1_4x4')(x)
-    x5 = Conv2D(num_mel_filters // 8, (num_mel_filters // 4), padding='same', activation='sigmoid',
-                name='conv_rev1_5x5')(x)
-    x = concatenate([x3, x4, x5])
+    hconcat_f1 = concatenate(
+        [hconv_5x5, hconv_4x4, hconv_3x3], axis=3, name="hide_concat_3")
 
-    x3 = Conv2D(num_mel_filters // 2, (2, num_mel_filters), padding='same',
-                activation='sigmoid', name='conv_rev2_3x3')(x)
-    x4 = Conv2D(num_mel_filters // 4, (num_mel_filters // 2), padding='same', activation='sigmoid',
-                name='conv_rev2_4x4')(x)
-    x5 = Conv2D(num_mel_filters // 8, (num_mel_filters // 4), padding='same', activation='sigmoid',
-                name='conv_rev2_5x5')(x)
-    x = concatenate([x3, x4, x5])
+    cover_pred = Conv2D(num_mel_filters, kernel_size=1, padding="same",
+                        name='hide_conv_f')(hconcat_f1)
 
-    x3 = Conv2D(num_mel_filters // 2, (2, num_mel_filters), padding='same',
-                activation='sigmoid', name='conv_rev3_3x3')(x)
-    x4 = Conv2D(num_mel_filters // 4, (num_mel_filters // 2), padding='same', activation='sigmoid',
-                name='conv_rev3_4x4')(x)
-    x5 = Conv2D(num_mel_filters // 8, (num_mel_filters // 4), padding='same', activation='sigmoid',
-                name='conv_rev3_5x5')(x)
-    x = concatenate([x3, x4, x5])
+    # Noise layer
+    noise_ip = GaussianNoise(0.1)(cover_pred)
 
-    x3 = Conv2D(num_mel_filters // 2, (2, num_mel_filters), padding='same',
-                activation='sigmoid', name='conv_rev4_3x3')(x)
-    x4 = Conv2D(num_mel_filters // 4, (num_mel_filters // 2), padding='same', activation='sigmoid',
-                name='conv_rev4_4x4')(x)
-    x5 = Conv2D(num_mel_filters // 8, (num_mel_filters // 4), padding='same', activation='sigmoid',
-                name='conv_rev4_5x5')(x)
-    x = concatenate([x3, x4, x5])
+    # Reveal network - patches [3*3,4*4,5*5]
+    rconv_3x3 = Conv2D(50, kernel_size=3, padding="same",
+                       activation='relu', name='revl_conv3x3_1')(noise_ip)
+    rconv_3x3 = Conv2D(50, kernel_size=3, padding="same",
+                       activation='relu', name='revl_conv3x3_2')(rconv_3x3)
+    rconv_3x3 = Conv2D(50, kernel_size=3, padding="same",
+                       activation='relu', name='revl_conv3x3_3')(rconv_3x3)
+    rconv_3x3 = Conv2D(50, kernel_size=3, padding="same",
+                       activation='relu', name='revl_conv3x3_4')(rconv_3x3)
 
-    output_Sprime = Conv2D(num_mel_filters, (2, num_mel_filters), padding='same',
-                           activation='sigmoid', name='output_S')(x)
+    rconv_4x4 = Conv2D(50, kernel_size=4, padding="same",
+                       activation='relu', name='revl_conv4x4_1')(noise_ip)
+    rconv_4x4 = Conv2D(50, kernel_size=4, padding="same",
+                       activation='relu', name='revl_conv4x4_2')(rconv_4x4)
+    rconv_4x4 = Conv2D(50, kernel_size=4, padding="same",
+                       activation='relu', name='revl_conv4x4_3')(rconv_4x4)
+    rconv_4x4 = Conv2D(50, kernel_size=4, padding="same",
+                       activation='relu', name='revl_conv4x4_4')(rconv_4x4)
 
-    return Model(inputs=reveal_input,
-                 outputs=output_Sprime,
-                 name='Decoder')
+    rconv_5x5 = Conv2D(50, kernel_size=5, padding="same",
+                       activation='relu', name='revl_conv5x5_1')(noise_ip)
+    rconv_5x5 = Conv2D(50, kernel_size=5, padding="same",
+                       activation='relu', name='revl_conv5x5_2')(rconv_5x5)
+    rconv_5x5 = Conv2D(50, kernel_size=5, padding="same",
+                       activation='relu', name='revl_conv5x5_3')(rconv_5x5)
+    rconv_5x5 = Conv2D(50, kernel_size=5, padding="same",
+                       activation='relu', name='revl_conv5x5_4')(rconv_5x5)
 
+    rconcat_1 = concatenate(
+        [rconv_3x3, rconv_4x4, rconv_5x5], axis=3, name="revl_concat_1")
 
-def make_model(input_size):
-    """ Full model """
-    sgd = SGD(lr=0.001, decay=1e-6, momentum=0.9, nesterov=True)
+    rconv_5x5 = Conv2D(50, kernel_size=5, padding="same",
+                       activation='relu', name='revl_conv5x5_f')(rconcat_1)
+    rconv_4x4 = Conv2D(50, kernel_size=4, padding="same",
+                       activation='relu', name='revl_conv4x4_f')(rconcat_1)
+    rconv_3x3 = Conv2D(50, kernel_size=3, padding="same",
+                       activation='relu', name='revl_conv3x3_f')(rconcat_1)
 
-    input_S = Input(shape=(input_size))
-    input_C = Input(shape=(input_size))
-    # print(input_S.shape)
-    # print(input_C.shape)
+    rconcat_f1 = concatenate(
+        [rconv_5x5, rconv_4x4, rconv_3x3], axis=3, name="revl_concat_2")
 
-    encoder = make_encoder(input_size)
+    secret_pred = Conv2D(num_mel_filters, kernel_size=1, padding="same",
+                         name='revl_conv_f')(rconcat_f1)
 
-    decoder = make_decoder(input_size)
-    decoder.compile(optimizer=sgd,
-                    loss=losses.binary_crossentropy, metrics=['accuracy'])
-    decoder.trainable = False
+    model = Model(inputs=[secret, cover], outputs=[cover_pred, secret_pred])
 
-    output_Cprime = encoder([input_S, input_C])
-    # print(output_Cprime.shape)
-    output_Sprime = decoder(output_Cprime)
+    # Compile model
+    model.compile(optimizer='adam', loss=lossFns, loss_weights=lossWeights)
 
-    autoencoder = Model(inputs=[input_S, input_C],
-                        outputs=concatenate([output_Sprime, output_Cprime]))
-    autoencoder.compile(optimizer=sgd,
-                        loss=losses.binary_crossentropy, metrics=['accuracy'])
-
-    return encoder, decoder, autoencoder
+    return model
 
 
 # print(type(secret_audio_files[0]))
 # print(secret_audio_files.shape[1:])
-encoder_model, reveal_model, autoencoder_model = make_model(
-    secret_audio_files.shape[1:])
+model = steg_model(cover_audio_files.shape[1:], pretrain=False)
 
 
 def lr_schedule(epoch_idx):
@@ -320,14 +314,14 @@ if len(sys.argv) == 1:
         log_dir, monitor='loss', verbose=1, save_best_only=True, mode='max')
 
     # train model
-    autoencoder_model.fit(x=x_data, y=y_data, epochs=epochs,
-                          batch_size=batch_size, callbacks=[callback_tensorboard, callback_checkpoint])
+    model.fit(x=x_data, y=x_data, epochs=epochs,
+              batch_size=batch_size, callbacks=[callback_tensorboard, callback_checkpoint])
 
     # save model
     model_hdf5 = 'model-{}.hdf5'.format(
         datetime.datetime.now().strftime("%Y%m%d_%H%M"))
-    autoencoder_model.save_weights(model_hdf5)
+    model.save_weights(model_hdf5)
     log.info('Model weights saved at {}'.format(model_hdf5))
 else:
-    autoencoder_model.load_weights(sys.argv[1])
+    model.load_weights(sys.argv[1])
     log.info('Model loaded from {}'.format(sys.argv[1]))
