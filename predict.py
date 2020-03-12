@@ -1,6 +1,8 @@
+#!/usr/bin/env python3
+# coding: utf-8
+
 import argparse
 import logging as log
-import IPython
 import model
 import constants
 import utils
@@ -14,10 +16,11 @@ log.basicConfig(format='%(asctime)s.%(msecs)06d: %(message)s',
 parser = argparse.ArgumentParser(
     description="Load a audio steganorgaphy tensorflow model and hide a secret message inside a cover message")
 parser.add_argument("--model", required=True, help="path to trained model")
-parser.add_argument("--secret_audio", required=True,
+parser.add_argument("--secret", required=True,
                     help="path to secret audio file")
-parser.add_argument("--cover_audio", required=True, help="path to audio file")
-parser.add_argument("--length", required=True, help="length of the spectrogram", type=int)
+parser.add_argument("--cover", required=True, help="path to audio file")
+parser.add_argument("--length", required=True,
+                    help="length of the spectrogram", type=int)
 args = vars(parser.parse_args())
 
 # load model
@@ -38,7 +41,8 @@ secret_audio = utils.pad_single(secret_audio, args['length'])
 cover_audio = utils.pad_single(cover_audio, args['length'])
 
 # predict the output
-secret_out, cover_out = mdl.predict([np.array([secret_audio]), np.array([cover_audio])])
+secret_out, cover_out = mdl.predict(
+    [np.array([secret_audio]), np.array([cover_audio])])
 
 print(type(secret_out))
 wav = utils.convert_mel_spec_to_wav(secret_out)
