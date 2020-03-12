@@ -4,3 +4,4 @@ venv/
 .vscode/
 *.hdf5
 logs/
+predictions/
