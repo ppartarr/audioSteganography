@@ -62,6 +62,8 @@ del test_csv
 del test_data
 
 # we split training set into two halfs.
+train_spectrograms = x_train.shape[2]
+log.info('Samples padded to {}'.format(train_spectrograms))
 secret_audio_files = x_train[0:x_train.shape[0] // 2]
 cover_audio_files = x_train[x_train.shape[0] // 2:]
 
@@ -85,7 +87,7 @@ model.fit(x=x_data, y=x_data, epochs=constants.epochs,
           batch_size=constants.batch_size, callbacks=[callback_tensorboard, callback_checkpoint])
 
 # save model
-model_hdf5 = 'model-{}.hdf5'.format(
-    datetime.datetime.now().strftime("%Y%m%d_%H%M"))
+model_hdf5 = 'model-{}-n{}.hdf5'.format(
+    datetime.datetime.now().strftime("%Y%m%d_%H%M"), train_spectrograms)
 model.save_weights(model_hdf5)
 log.info('Model weights saved at {}'.format(model_hdf5))
