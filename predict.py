@@ -27,7 +27,7 @@ args = vars(parser.parse_args())
 
 # config
 shape = (1, args['length'], constants.num_mel_filters)
-output_dir = os.path.join('predictions', args['model'])
+output_dir = os.path.join('predictions', os.path.basename(args['model']))
 
 # load model
 mdl = model.steg_model(shape, pretrain=False)
