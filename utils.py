@@ -39,63 +39,105 @@ def convert_wav_to_mel_spec(
         path_to_wav,
         num_mel_filters=constants.num_mel_filters,
         lower_edge_hertz=constants.lower_edge_hertz,
-        upper_edge_hertz=8000.0,
-        frame_length=1024,
-        frame_step=256,
-        fft_length=1024):
+        upper_edge_hertz=constants.upper_edge_hertz,
+        frame_length=constants.frame_length,
+        frame_step=constants.frame_step,
+        fft_length=constants.fft_length):
+
     # extract audio and sample rate from WAV file
     raw_audio = tf.io.read_file(path_to_wav)
     audio, sample_rate = tf.audio.decode_wav(raw_audio)
+    print('audio', audio.shape)
+    print('sample_rate', sample_rate)
 
     # reshape the signal to the shape of (batch_size, samples])
-    signals = tf.reshape(audio, [1, -1])
+    signals = tf.linalg.pinv(audio)
+    print('signals', signals.shape)
 
     # a 1024-point STFT with frames of 64 ms and 75% overlap
-    stfts = tf.signal.stft(signals, frame_length=frame_length,
-                           frame_step=frame_step, fft_length=fft_length)
+    stfts = tf.signal.stft(
+        signals,
+        frame_length=frame_length,
+        frame_step=frame_step,
+        fft_length=fft_length)
+    print('stfts', stfts.shape)
     spectrograms = tf.abs(stfts)
+    print('spectrograms', spectrograms.shape)
 
     # warp the linear scale spectrograms into the mel-scale
     num_spectrogram_bins = stfts.shape[-1]
+    print('num_spectrogram_bins', num_spectrogram_bins)
     linear_to_mel_weight_matrix = tf.signal.linear_to_mel_weight_matrix(
-        num_mel_filters, num_spectrogram_bins, sample_rate, lower_edge_hertz, upper_edge_hertz)
+        num_mel_bins=num_mel_filters,
+        num_spectrogram_bins=num_spectrogram_bins,
+        sample_rate=sample_rate,
+        lower_edge_hertz=lower_edge_hertz,
+        upper_edge_hertz=upper_edge_hertz
+    )
+    print('linear_to_mel_weight_matrix', linear_to_mel_weight_matrix.shape)
     mel_spectrograms = tf.tensordot(
         spectrograms, linear_to_mel_weight_matrix, 1)
+    print('mel_spectrograms', mel_spectrograms.shape)
     mel_spectrograms.set_shape(
         spectrograms.shape[:-1].concatenate(linear_to_mel_weight_matrix.shape[-1:]))
+    print('mel_spectrograms', mel_spectrograms.shape)
+    print('---------------------------')
 
     return mel_spectrograms
 
 
 def convert_mel_spec_to_wav(
         specgrams,
-        sample_rate=16000,
-        num_mel_filters=32,
-        lower_edge_hertz=20.0,
-        upper_edge_hertz=8000.0,
-        frame_length=1024,
-        frame_step=256,
-        fft_length=1024):
-    # unwrap the mel-scale spectrogram into the linear scale
-    num_spectrogram_bins = specgrams.shape[-1]
-    linear_to_mel_weight_matrix = tf.signal.linear_to_mel_weight_matrix(
-        num_mel_filters, num_spectrogram_bins, sample_rate, lower_edge_hertz, upper_edge_hertz)
+        sample_rate=constants.sample_rate,
+        num_mel_filters=constants.num_mel_filters,
+        lower_edge_hertz=constants.lower_edge_hertz,
+        upper_edge_hertz=constants.upper_edge_hertz,
+        frame_length=constants.frame_length,
+        frame_step=constants.frame_step,
+        fft_length=constants.fft_length):
+    specgrams = tf.convert_to_tensor(specgrams)
 
-    mel_to_linear_weight_matrix = tf.linalg.inv(linear_to_mel_weight_matrix)
+    num_spectrogram_bins = 513
+    print('num_spectrogram_bins', num_spectrogram_bins)
+
+    linear_to_mel_weight_matrix = tf.signal.linear_to_mel_weight_matrix(
+        num_mel_bins=num_mel_filters,
+        num_spectrogram_bins=num_spectrogram_bins,
+        sample_rate=sample_rate,
+        lower_edge_hertz=lower_edge_hertz,
+        upper_edge_hertz=upper_edge_hertz
+    )
+    print('linear_to_mel_weight_matrix', linear_to_mel_weight_matrix.shape)
+
+    mel_to_linear_weight_matrix = tf.linalg.pinv(linear_to_mel_weight_matrix)
+    print('mel_to_linear_weight_matrix', mel_to_linear_weight_matrix.shape)
+
+    stfts = tf.tensordot(specgrams, mel_to_linear_weight_matrix, axes=1)
+    print('stfts', stfts.shape)
+    stfts.set_shape(
+        specgrams.shape[:-1].concatenate(mel_to_linear_weight_matrix.shape[-1:]))
+    print('stfts', stfts.shape)
 
     inverse_stft = tf.signal.inverse_stft(
-        mel_to_linear_weight_matrix, frame_length, frame_step)
+        stfts=tf.complex(stfts, 0.0),
+        frame_length=frame_length,
+        frame_step=frame_step
+    )
+    print('inverse_stft', inverse_stft.shape)
 
-    return tf.audio.encode_wav(inverse_stft, sample_rate)
+    signals = tf.linalg.pinv(inverse_stft)
+    print('signals', signals.shape)
+
+    return tf.audio.encode_wav(signals, sample_rate)
 
 
 def load_dataset_mel_spectogram(
         dataset=[],
-        num_audio_files=100,
-        num_mel_filters=32,
         data_dir="data",
-        lower_edge_hertz=20.0,
-        upper_edge_hertz=8000.0):
+        num_audio_files=100,
+        num_mel_filters=constants.num_mel_filters,
+        lower_edge_hertz=constants.lower_edge_hertz,
+        upper_edge_hertz=constants.upper_edge_hertz):
     """
     Loads training and test datasets, from TIMIT and convert into spectrogram using STFT
     Arguments:
