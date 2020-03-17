@@ -10,6 +10,10 @@ import numpy as np
 import tensorflow as tf
 import shutil
 import os
+import librosa
+import librosa.display
+import librosa.feature
+import matplotlib.pyplot as plt
 
 log.basicConfig(format='%(asctime)s.%(msecs)06d: %(message)s',
                 datefmt='%Y-%m-%d %H:%M:%S', level=log.INFO)
@@ -65,6 +69,34 @@ for output in [
     full_fname = os.path.join(output_dir, output['fname'])
     tf.io.write_file(full_fname, wav, name=None)
     log.info('Spectrogram converted to wav: {}'.format(full_fname))
+
+
+# create plot of spectrograms
+plt.figure(figsize=(12, 8))
+plt.subplot(2, 2, 1)
+librosa.display.specshow(input_decibel, sr=constants.sample_rate, hop_length=constants.frame_step, y_axis='mel', x_axis='time')
+plt.colorbar(format='%+2.0f dB')
+plt.title('Input wav file as mel spec')
+
+plt.subplot(2, 2, 2)
+librosa.display.specshow(output_decibel, sr=constants.sample_rate, hop_length=constants.frame_step, y_axis='mel', x_axis='time')
+plt.colorbar(format='%+2.0f dB')
+plt.title('Ouput wav file as mel spec')
+
+plt.figure(figsize=(12, 8))
+plt.subplot(2, 2, 1)
+librosa.display.specshow(input_decibel, sr=constants.sample_rate, hop_length=constants.frame_step, y_axis='mel', x_axis='time')
+plt.colorbar(format='%+2.0f dB')
+plt.title('Input wav file as mel spec')
+
+plt.figure(figsize=(12, 8))
+plt.subplot(2, 2, 1)
+librosa.display.specshow(input_decibel, sr=constants.sample_rate, hop_length=constants.frame_step, y_axis='mel', x_axis='time')
+plt.colorbar(format='%+2.0f dB')
+plt.title('Input wav file as mel spec')
+
+plt.tight_layout()
+plt.savefig(os.path.join(output_dir, 'plot'))
 
 # play audio
 # IPython.display.Audio(wav)
