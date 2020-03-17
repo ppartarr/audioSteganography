@@ -38,15 +38,12 @@ mdl = model.steg_model(shape, pretrain=False)
 mdl.load_weights(args['model'])
 
 # convert wav to spectrograms
-secret_audio = utils.convert_wav_to_mel_spec(args['secret'])
-cover_audio = utils.convert_wav_to_mel_spec(args['cover'])
-dataset = [secret_audio, cover_audio]
-secret_audio = utils.pad_single(secret_audio, args['length'])
-cover_audio = utils.pad_single(cover_audio, args['length'])
+secret_in = utils.pad_single(utils.convert_wav_to_mel_spec(args['secret']), args['length'])
+cover_in = utils.pad_single(utils.convert_wav_to_mel_spec(args['cover']), args['length'])
 
-# predict the output
+# predict the output return two tensor wav
 secret_out, cover_out = mdl.predict(
-    [np.array([secret_audio]), np.array([cover_audio])])
+    [np.array([secret_in]), np.array([cover_in])])
 
 # build output dir
 os.makedirs(output_dir, exist_ok=True)
