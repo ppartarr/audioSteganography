@@ -32,24 +32,21 @@ specgram = utils.convert_wav_to_mel_spec(data_file)
 wav = utils.convert_mel_spec_to_wav(specgram)
 tf.io.write_file(full_fname, wav, name=None)
 
-input_specgram = utils.convert_wav_to_mel_spec_librosa(data_file)
+# show input & output spectrograms
+input_specgram = utils.tf_melspec_to_librosa(specgram)
 input_decibel = librosa.power_to_db(input_specgram, ref=np.max)
 
-output_specgram = utils.convert_wav_to_mel_spec_librosa(full_fname)
+output_specgram = utils.tf_melspec_to_librosa(utils.convert_wav_to_mel_spec(full_fname))
 output_decibel = librosa.power_to_db(output_specgram, ref=np.max)
-
-
-print(specgram.shape)
-print(input_specgram.shape)
 
 # save secret & cover spectrograms
 plt.figure(figsize=(12, 8))
-plt.subplot(3, 1, 1)
+plt.subplot(2, 1, 1)
 librosa.display.specshow(input_decibel, sr=constants.sample_rate, hop_length=constants.frame_step, y_axis='mel', x_axis='time')
 plt.colorbar(format='%+2.0f dB')
 plt.title('Input wav file as mel spec')
 
-plt.subplot(3, 1, 2)
+plt.subplot(2, 1, 2)
 librosa.display.specshow(output_decibel, sr=constants.sample_rate, hop_length=constants.frame_step, y_axis='mel', x_axis='time')
 plt.colorbar(format='%+2.0f dB')
 plt.title('Ouput wav file as mel spec')
