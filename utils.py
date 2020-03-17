@@ -154,3 +154,16 @@ def librosa_wav_to_tf(librosa_wav, sample_rate=constants.sample_rate):
     )
 
     return tf.audio.encode_wav(audio, sample_rate)
+
+
+def tf_wav_to_librosa(tf_wav, sample_rate=constants.sample_rate):
+    """
+    Converts a Tensorflow Tensor wav file to a Librosa wav
+        Librosa wav shape: t
+        Tensorflow wav shape: (1, t)
+    """
+    # print(tf_wav.shape)
+    # print(tf_wav[0])
+    audio, sample_rate = tf.audio.decode_wav(tf_wav)
+    print('audio shape: ', audio.shape)
+    return audio[0]
