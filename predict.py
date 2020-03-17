@@ -65,38 +65,48 @@ for output in [
         'fname': 'output_secret_' + os.path.basename(args['secret'])
     }
 ]:
-    wav = utils.convert_mel_spec_to_wav(output['specgram'])
+    print(output['specgram'].shape)
+    wav = utils.convert_mel_spec_to_wav(output['specgram'][0])
     full_fname = os.path.join(output_dir, output['fname'])
     tf.io.write_file(full_fname, wav, name=None)
     log.info('Spectrogram converted to wav: {}'.format(full_fname))
 
 
 # create plot of spectrograms
-plt.figure(figsize=(12, 8))
-plt.subplot(2, 2, 1)
-librosa.display.specshow(input_decibel, sr=constants.sample_rate, hop_length=constants.frame_step, y_axis='mel', x_axis='time')
-plt.colorbar(format='%+2.0f dB')
-plt.title('Input wav file as mel spec')
+cover_in_melspec = librosa.power_to_db(secret_in, ref=np.max)
+secret_in_melspec = librosa.power_to_db(secret_in, ref=np.max)
 
-plt.subplot(2, 2, 2)
-librosa.display.specshow(output_decibel, sr=constants.sample_rate, hop_length=constants.frame_step, y_axis='mel', x_axis='time')
-plt.colorbar(format='%+2.0f dB')
-plt.title('Ouput wav file as mel spec')
+# cover_out_wav = utils.convert_wav_to_mel_spec(cover_out[0])
+# cover_out_melspec = librosa.power_to_db(cover_out_wav, ref=np.max)
 
-plt.figure(figsize=(12, 8))
-plt.subplot(2, 2, 1)
-librosa.display.specshow(input_decibel, sr=constants.sample_rate, hop_length=constants.frame_step, y_axis='mel', x_axis='time')
-plt.colorbar(format='%+2.0f dB')
-plt.title('Input wav file as mel spec')
+# secret_out_wav = utils.convert_wav_to_mel_spec(secret_out[0])
+# secret_out_melspec = librosa.power_to_db(secret_out_wav, ref=np.max)
 
-plt.figure(figsize=(12, 8))
-plt.subplot(2, 2, 1)
-librosa.display.specshow(input_decibel, sr=constants.sample_rate, hop_length=constants.frame_step, y_axis='mel', x_axis='time')
-plt.colorbar(format='%+2.0f dB')
-plt.title('Input wav file as mel spec')
+# plt.figure(figsize=(12, 8))
+# plt.subplot(2, 2, 1)
+# librosa.display.specshow(cover_in_melspec, sr=constants.sample_rate, hop_length=constants.frame_step, y_axis='mel', x_axis='time')
+# plt.colorbar(format='%+2.0f dB')
+# plt.title('Input cover')
 
-plt.tight_layout()
-plt.savefig(os.path.join(output_dir, 'plot'))
+# plt.subplot(2, 2, 2)
+# librosa.display.specshow(cover_out_melspec, sr=constants.sample_rate, hop_length=constants.frame_step, y_axis='mel', x_axis='time')
+# plt.colorbar(format='%+2.0f dB')
+# plt.title('Ouput cover')
+
+# plt.figure(figsize=(12, 8))
+# plt.subplot(2, 2, 3)
+# librosa.display.specshow(secret_in_melspec, sr=constants.sample_rate, hop_length=constants.frame_step, y_axis='mel', x_axis='time')
+# plt.colorbar(format='%+2.0f dB')
+# plt.title('Input secret')
+
+# plt.figure(figsize=(12, 8))
+# plt.subplot(2, 2, 4)
+# librosa.display.specshow(secret_out_melspec, sr=constants.sample_rate, hop_length=constants.frame_step, y_axis='mel', x_axis='time')
+# plt.colorbar(format='%+2.0f dB')
+# plt.title('Output secret')
+
+# plt.tight_layout()
+# plt.savefig(os.path.join(output_dir, 'plot'))
 
 # play audio
 # IPython.display.Audio(wav)
