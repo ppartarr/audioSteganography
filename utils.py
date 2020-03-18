@@ -51,6 +51,7 @@ def load_dataset_mel_spectogram(
 
     # list initialization
     numpy_specgrams = []
+    numpy_specgrams_pad = []
 
     # data parsing
     while len(numpy_specgrams) < num_audio_files:
@@ -59,7 +60,17 @@ def load_dataset_mel_spectogram(
             data_dir, sample.item()), num_mel_filters=num_mel_filters)
         numpy_specgrams.append(mel_specgram)
 
-    return np.array(pad(numpy_specgrams))
+    # calculate padding
+    pad_to = 0
+    for specgram in numpy_specgrams:
+        if specgram.shape[1] > pad_to:
+            pad_to = specgram.shape[1]
+
+    while len(numpy_specgrams) > 0:
+        specgram = numpy_specgrams.pop()
+        numpy_specgrams_pad.append(pad_single(specgram, pad_to))
+
+    return np.array(pad(numpy_specgrams_pad))
 
 
 def convert_wav_to_mel_spec(
