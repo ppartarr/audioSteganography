@@ -30,13 +30,13 @@ data_dir = "data"
 train_csv = pd.read_csv(os.path.join(data_dir, "train_data.csv"))
 train_data = train_csv[train_csv.path_from_data_dir.str.contains(
     'WAV.wav', na=False)]
-test_csv = pd.read_csv(os.path.join(data_dir, "test_data.csv"))
-test_data = test_csv[test_csv.path_from_data_dir.str.contains(
-    'WAV.wav', na=False)]
+# test_csv = pd.read_csv(os.path.join(data_dir, "test_data.csv"))
+# test_data = test_csv[test_csv.path_from_data_dir.str.contains(
+#     'WAV.wav', na=False)]
 
 # configuration statistics
 log.info('Training examples: {}'.format(train_data.shape[0]))
-log.info('Test examples: {}'.format(test_data.shape[0]))
+# log.info('Test examples: {}'.format(test_data.shape[0]))
 
 # single sample informations
 # the length of the audio file in seconds is audio.shape / sample_rate
@@ -54,18 +54,20 @@ del sample_rate
 #   128 is the number of mel filters
 x_train = utils.load_dataset_mel_spectogram(
     dataset=train_data, num_audio_files=constants.num_samples, num_mel_filters=constants.num_mel_filters, data_dir=data_dir)
-x_test = utils.load_dataset_mel_spectogram(
-    dataset=test_data, num_audio_files=constants.num_samples, num_mel_filters=constants.num_mel_filters, data_dir=data_dir)
+# x_test = utils.load_dataset_mel_spectogram(
+#     dataset=test_data, num_audio_files=constants.num_samples, num_mel_filters=constants.num_mel_filters, data_dir=data_dir)
 del train_csv
 del train_data
-del test_csv
-del test_data
+# del test_csv
+# del test_data
 
 # we split training set into two halfs.
 train_spectrograms = x_train.shape[2]
 log.info('Samples padded to {}'.format(train_spectrograms))
 secret_audio_files = x_train[0:x_train.shape[0] // 2]
 cover_audio_files = x_train[x_train.shape[0] // 2:]
+del x_train
+# del x_test
 
 summary.print_(summary.summarize(muppy.get_objects()))
 
