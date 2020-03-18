@@ -7,6 +7,6 @@ sample_rate = 16000
 lower_edge_hertz = 20.0
 upper_edge_hertz = 8000.0
 frame_length = 160
-frame_step = 40
+frame_step = frame_length // 4
 num_fft = 2048
 num_mel_filters = 512
