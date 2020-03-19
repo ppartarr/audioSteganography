@@ -50,42 +50,40 @@ def load_dataset_mel_spectogram(
     """
 
     # list initialization
-    numpy_specgrams = []
-    numpy_specgrams_pad = []
+    numpy_specgrams = None
 
     # padding vars
-    length_specgrams = None
-    pad_specgrams = False
+    longest_specgram = 0
 
     # data parsing
-    while len(numpy_specgrams) < num_audio_files:
-        print('Parsing data progress: {}% ({}/{})'.format(
-            len(numpy_specgrams) * 100 // num_audio_files, len(numpy_specgrams), num_audio_files), end="\r")
+    while numpy_specgrams is None or len(numpy_specgrams) < num_audio_files:
         sample = dataset.path_from_data_dir.sample()
         mel_specgram = convert_wav_to_mel_spec(os.path.join(
             data_dir, sample.item()), num_mel_filters=num_mel_filters)
 
-        if length_specgrams is None:
-            length_specgrams = mel_specgram.shape[1]
-        elif length_specgrams != mel_specgram.shape[1]:
-            pad_specgrams = True
-            if length_specgrams < mel_specgram.shape[1]:
-                length_specgrams = mel_specgram.shape[1]
+        if numpy_specgrams is None:
+            numpy_specgrams = mel_specgram[np.newaxis, ...]
+            longest_specgram = mel_specgram.shape[1]
+        else:
+            if longest_specgram < mel_specgram.shape[1]:
+                # pad parsed specgrams
+                pad_by = mel_specgram.shape[1] - longest_specgram
+                padding = tf.constant([[0, 0], [0, 0], [0, pad_by], [0, 0]])
+                numpy_specgrams = tf.pad(numpy_specgrams, padding, 'CONSTANT')
+                longest_specgram = mel_specgram.shape[1]
+            elif longest_specgram > mel_specgram.shape[1]:
+                # pad new specgram
+                pad_by = longest_specgram - mel_specgram.shape[1]
+                padding = tf.constant([[0, 0], [0, pad_by], [0, 0]])
+                mel_specgram = tf.pad(mel_specgram, padding, 'CONSTANT')
 
-        numpy_specgrams.append(mel_specgram.numpy())
+            numpy_specgrams = np.concatenate(
+                (numpy_specgrams, mel_specgram[np.newaxis, ...]), axis=0)
 
-    if not pad_specgrams:
-        print('Dataset does not need padding')
-        return np.array(numpy_specgrams)
+        print('Parsing data progress: {}% ({}/{})'.format(
+            len(numpy_specgrams) * 100 // num_audio_files, len(numpy_specgrams), num_audio_files), end="\r")
 
-    # padding
-    while len(numpy_specgrams) > 0:
-        print('Padding data progress: {}% ({}/{})'.format(len(numpy_specgrams_pad) * 100 // (len(numpy_specgrams) + len(numpy_specgrams_pad)),
-                                                          len(numpy_specgrams_pad), len(numpy_specgrams) + len(numpy_specgrams_pad)), end="\r")
-        specgram = numpy_specgrams.pop()
-        numpy_specgrams_pad.append(pad_single(specgram, length_specgrams))
-
-    return np.array(numpy_specgrams_pad)
+    return numpy_specgrams
 
 
 def convert_wav_to_mel_spec(
