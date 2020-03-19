@@ -93,7 +93,7 @@ def convert_wav_to_mel_spec(
         fmax=constants.upper_edge_hertz,
         hop_length=constants.frame_step,
         sample_rate=constants.sample_rate,
-        n_fft=constants.num_fft):
+        n_fft=constants.frame_length):
     """
     Converts a raw wav to a Tensor mel spectrogram
         Raw wave shape: (samples, 1)
@@ -120,7 +120,7 @@ def convert_mel_spec_to_wav(
         fmax=constants.upper_edge_hertz,
         hop_length=constants.frame_step,
         sample_rate=constants.sample_rate,
-        n_fft=constants.num_fft):
+        n_fft=constants.frame_length):
     """
     Converts a Tensor mel spectrogram to a Tensor wav
         Tensor mel spectrogram shape: (1, t, num_mel_filters)
