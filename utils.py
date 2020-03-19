@@ -53,24 +53,39 @@ def load_dataset_mel_spectogram(
     numpy_specgrams = []
     numpy_specgrams_pad = []
 
+    # padding vars
+    length_specgrams = None
+    pad_specgrams = False
+
     # data parsing
     while len(numpy_specgrams) < num_audio_files:
+        print('Parsing data progress: {}% ({}/{})'.format(
+            len(numpy_specgrams) * 100 // num_audio_files, len(numpy_specgrams), num_audio_files), end="\r")
         sample = dataset.path_from_data_dir.sample()
         mel_specgram = convert_wav_to_mel_spec(os.path.join(
             data_dir, sample.item()), num_mel_filters=num_mel_filters)
-        numpy_specgrams.append(mel_specgram)
 
-    # calculate padding
-    pad_to = 0
-    for specgram in numpy_specgrams:
-        if specgram.shape[1] > pad_to:
-            pad_to = specgram.shape[1]
+        if length_specgrams is None:
+            length_specgrams = mel_specgram.shape[1]
+        elif length_specgrams != mel_specgram.shape[1]:
+            pad_specgrams = True
+            if length_specgrams < mel_specgram.shape[1]:
+                length_specgrams = mel_specgram.shape[1]
 
+        numpy_specgrams.append(mel_specgram.numpy())
+
+    if not pad_specgrams:
+        print('Dataset does not need padding')
+        return np.array(numpy_specgrams)
+
+    # padding
     while len(numpy_specgrams) > 0:
+        print('Padding data progress: {}% ({}/{})'.format(len(numpy_specgrams_pad) * 100 // (len(numpy_specgrams) + len(numpy_specgrams_pad)),
+                                                          len(numpy_specgrams_pad), len(numpy_specgrams) + len(numpy_specgrams_pad)), end="\r")
         specgram = numpy_specgrams.pop()
-        numpy_specgrams_pad.append(pad_single(specgram, pad_to))
+        numpy_specgrams_pad.append(pad_single(specgram, length_specgrams))
 
-    return np.array(pad(numpy_specgrams_pad))
+    return np.array(numpy_specgrams_pad)
 
 
 def convert_wav_to_mel_spec(
@@ -98,9 +113,7 @@ def convert_wav_to_mel_spec(
         fmax=fmax,
         center=True)
 
-    tf_melspec = librosa_melspec_to_tf(librosa_melspec)
-
-    return tf_melspec
+    return librosa_melspec_to_tf(librosa_melspec)
 
 
 def convert_mel_spec_to_wav(
