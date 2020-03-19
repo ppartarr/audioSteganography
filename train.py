@@ -56,6 +56,7 @@ x_train = utils.load_dataset_mel_spectogram(
     dataset=train_data, num_audio_files=constants.num_samples, num_mel_filters=constants.num_mel_filters, data_dir=data_dir)
 # x_test = utils.load_dataset_mel_spectogram(
 #     dataset=test_data, num_audio_files=constants.num_samples, num_mel_filters=constants.num_mel_filters, data_dir=data_dir)
+log.info('Samples shape: {}'.format(x_train.shape))
 del train_csv
 del train_data
 # del test_csv
@@ -63,7 +64,6 @@ del train_data
 
 # we split training set into two halfs.
 train_spectrograms = x_train.shape[2]
-log.info('Samples padded to {}'.format(train_spectrograms))
 secret_audio_files = x_train[0:x_train.shape[0] // 2]
 cover_audio_files = x_train[x_train.shape[0] // 2:]
 del x_train
