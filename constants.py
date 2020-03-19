@@ -1,6 +1,6 @@
-epochs = 100
-num_samples = 30000
-batch_size = 16
+epochs = 300
+num_samples = 4620
+batch_size = 64
 sample_rate = 16000
 
 # STFT transform
