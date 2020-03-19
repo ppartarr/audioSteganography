@@ -44,11 +44,11 @@ log.info('Training examples: {}'.format(train_data.shape[0]))
 parser = argparse.ArgumentParser(
     description='Train a model to hide a secret audio message into a cover audio message'
 )
-parser.add_argument('-e', '--epochs', default=constants.epochs, help='number of epochs')
-parser.add_argument('-s', '--samples', default=constants.num_samples, help='number of sample to train the model with')
-parser.add_argument('-bs', '--batch-size', default=constants.batch_size, help='training batch size')
-parser.add_argument('-fl', '--frame-length', default=constants.frame_length, help='length of the stft window in frames')
-parser.add_argument('-mels', '--num-mel-bins', default=constants.num_mel_filters, help='number of mel filters to apply')
+parser.add_argument('--epochs', '-e', default=constants.epochs, help='number of epochs')
+parser.add_argument('--samples', '-s', default=constants.num_samples, help='number of sample to train the model with')
+parser.add_argument('--batchSize', '-b', default=constants.batch_size, help='training batch size')
+parser.add_argument('--frameLength', '-f', default=constants.frame_length, help='length of the stft window in frames')
+parser.add_argument('--melFilters', '-m', default=constants.num_mel_filters, help='number of mel filters to apply')
 args = vars(parser.parse_args())
 
 # validate input params
@@ -70,9 +70,9 @@ del sample_rate
 #   x is the number of 64ms spectrograms with 716% overlap
 #   128 is the number of mel filters
 x_train = utils.load_dataset_mel_spectogram(
-    dataset=train_data, num_audio_files=constants.num_samples, num_mel_filters=constants.num_mel_filters, data_dir=data_dir)
+    dataset=train_data, num_audio_files=args['samples'], num_mel_filters=args['melFilters'], data_dir=data_dir)
 # x_test = utils.load_dataset_mel_spectogram(
-#     dataset=test_data, num_audio_files=constants.num_samples, num_mel_filters=constants.num_mel_filters, data_dir=data_dir)
+#     dataset=test_data, num_audio_files=args['samples'], num_mel_filters=args['melFilters'], data_dir=data_dir)
 log.info('Samples shape: {}'.format(x_train.shape))
 del train_csv
 del train_data
@@ -102,8 +102,8 @@ callback_checkpoint = ModelCheckpoint(
     log_dir, monitor='loss', verbose=1, save_best_only=True, mode='max')
 
 # train model
-model.fit(x=x_data, y=x_data, epochs=constants.epochs,
-          batch_size=constants.batch_size, callbacks=[callback_tensorboard, callback_checkpoint])
+model.fit(x=x_data, y=x_data, epochs=args['epochs'],
+          batch_size=args['batchSize'], callbacks=[callback_tensorboard, callback_checkpoint])
 
 # save model
 model_hdf5 = 'model-{}-n{}.hdf5'.format(
