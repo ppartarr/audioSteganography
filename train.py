@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
+import argparse
 import datetime
 import numpy as np
 import os
@@ -8,6 +9,7 @@ import pandas as pd
 import utils
 import model
 import constants
+import sys
 
 # tensorflow
 import tensorflow as tf
@@ -37,6 +39,21 @@ train_data = train_csv[train_csv.path_from_data_dir.str.contains(
 # configuration statistics
 log.info('Training examples: {}'.format(train_data.shape[0]))
 # log.info('Test examples: {}'.format(test_data.shape[0]))
+
+# parse command line args
+parser = argparse.ArgumentParser(
+    description='Train a model to hide a secret audio message into a cover audio message'
+)
+parser.add_argument('-e', '--epochs', default=constants.epochs, help='number of epochs')
+parser.add_argument('-s', '--samples', default=constants.num_samples, help='number of sample to train the model with')
+parser.add_argument('-bs', '--batch-size', default=constants.batch_size, help='training batch size')
+parser.add_argument('-fl', '--frame-length', default=constants.frame_length, help='length of the stft window in frames')
+parser.add_argument('-mels', '--num-mel-bins', default=constants.num_mel_filters, help='number of mel filters to apply')
+args = vars(parser.parse_args())
+
+# validate input params
+if args['samples'] > train_data.shape[0] or constants.num_samples > train_data.shape[0]:
+    sys.exit('Error: there are only {} samples in the dataset, use a smaller sample size'.format(train_data.shape[0]))
 
 # single sample informations
 # the length of the audio file in seconds is audio.shape / sample_rate
