@@ -15,8 +15,8 @@ def steg_model(input_shape, pretrain=False):
         "revl_conv_f": losses.mean_squared_error,
     }
     lossWeights = {
-        "hide_conv_f": 1.0,
-        "revl_conv_f": 0.8
+        "hide_conv_f": 0.8,
+        "revl_conv_f": 1.0
     }
 
     # Inputs
