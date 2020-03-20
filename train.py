@@ -30,11 +30,15 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
 # import TIMIT dataset
 data_dir = "data"
 train_csv = pd.read_csv(os.path.join(data_dir, "train_data.csv"))
+test_csv = pd.read_csv(os.path.join(data_dir, "test_data.csv"))
+
 train_data = train_csv[train_csv.path_from_data_dir.str.contains(
     'WAV.wav', na=False)]
-# test_csv = pd.read_csv(os.path.join(data_dir, "test_data.csv"))
-# test_data = test_csv[test_csv.path_from_data_dir.str.contains(
-#     'WAV.wav', na=False)]
+test_data = test_csv[test_csv.path_from_data_dir.str.contains(
+    'WAV.wav', na=False)]
+
+# concatenate train & test data for training
+train_data = pd.concat([train_data, test_data])
 
 # configuration statistics
 log.info('Training examples: {}'.format(train_data.shape[0]))
