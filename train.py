@@ -48,16 +48,26 @@ log.info('Training examples: {}'.format(train_data.shape[0]))
 parser = argparse.ArgumentParser(
     description='Train a model to hide a secret audio message into a cover audio message'
 )
-parser.add_argument('--epochs', '-e', default=constants.epochs, help='number of epochs')
-parser.add_argument('--samples', '-s', default=constants.num_samples, help='number of sample to train the model with')
-parser.add_argument('--batchSize', '-b', default=constants.batch_size, help='training batch size')
-parser.add_argument('--frameLength', '-f', default=constants.frame_length, help='length of the stft window in frames')
-parser.add_argument('--melFilters', '-m', default=constants.num_mel_filters, help='number of mel filters to apply')
+parser.add_argument(
+    '--epochs', '-e', default=constants.epochs, help='number of epochs')
+parser.add_argument('--samples', '-s', default=constants.num_samples,
+                    help='number of sample to train the model with')
+parser.add_argument('--batchSize', '-b',
+                    default=constants.batch_size, help='training batch size')
+parser.add_argument('--frameLength', '-f', default=constants.frame_length,
+                    help='length of the stft window in frames')
+parser.add_argument('--melFilters', '-m', default=constants.num_mel_filters,
+                    help='number of mel filters to apply')
+parser.add_argument('--saveDataset', '-sD', action='store_true', default=True,
+                    help='serialize dataset once parsed')
+parser.add_argument('--loadDataset', '-lD', type=str,
+                    help='parse serialized dataset')
 args = vars(parser.parse_args())
 
 # validate input params
 if args['samples'] > train_data.shape[0] or constants.num_samples > train_data.shape[0]:
-    sys.exit('Error: there are only {} samples in the dataset, use a smaller sample size'.format(train_data.shape[0]))
+    sys.exit('Error: there are only {} samples in the dataset, use a smaller sample size'.format(
+        train_data.shape[0]))
 
 # single sample informations
 # the length of the audio file in seconds is audio.shape / sample_rate
@@ -73,8 +83,17 @@ del sample_rate
 #   1 is the number of channels (mono)
 #   x is the number of 64ms spectrograms with 716% overlap
 #   128 is the number of mel filters
-x_train = utils.load_dataset_mel_spectogram(
-    dataset=train_data, num_audio_files=args['samples'], num_mel_filters=args['melFilters'], data_dir=data_dir)
+if args['loadDataset'] is not None:
+    x_train = np.load(args['loadDataset'])
+    log.info('Dataset loaded from {}'.format(args['loadDataset']))
+else:
+    x_train = utils.load_dataset_mel_spectogram(
+        dataset=train_data, num_audio_files=args['samples'], num_mel_filters=args['melFilters'], data_dir=data_dir)
+    if args['saveDataset']:
+        datasetFname = 'dataset-{}'.format(
+            datetime.datetime.now().strftime("%Y%m%d_%H%M"))
+        np.save(datasetFname, x_train)
+        log.info('Dataset saved into {}.npy'.format(datasetFname))
 # x_test = utils.load_dataset_mel_spectogram(
 #     dataset=test_data, num_audio_files=args['samples'], num_mel_filters=args['melFilters'], data_dir=data_dir)
 log.info('Samples shape: {}'.format(x_train.shape))
