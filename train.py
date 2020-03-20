@@ -12,7 +12,6 @@ import constants
 import sys
 
 # tensorflow
-import tensorflow as tf
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint
 
 # memory investigation
@@ -29,19 +28,14 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
 
 # import TIMIT dataset
 data_dir = "data"
-train_csv = pd.read_csv(os.path.join(data_dir, "train_data.csv"))
-test_csv = pd.read_csv(os.path.join(data_dir, "test_data.csv"))
-
-train_data = train_csv[train_csv.path_from_data_dir.str.contains(
-    'WAV.wav', na=False)]
-test_data = test_csv[test_csv.path_from_data_dir.str.contains(
-    'WAV.wav', na=False)]
-
-# concatenate train & test data for training
-train_data = pd.concat([train_data, test_data])
+train_csv = pd.concat([pd.read_csv(os.path.join(
+    data_dir, "train_data.csv")), pd.read_csv(os.path.join(data_dir, "test_data.csv"))])
+train_data = [sample for sample in train_csv[train_csv.path_from_data_dir.str.contains(
+    'WAV.wav', na=False)]['path_from_data_dir']]
+del train_csv
 
 # configuration statistics
-log.info('Training examples: {}'.format(train_data.shape[0]))
+log.info('Training examples: {}'.format(len(train_data)))
 # log.info('Test examples: {}'.format(test_data.shape[0]))
 
 # parse command line args
@@ -65,18 +59,18 @@ parser.add_argument('--loadDataset', '-lD', type=str,
 args = vars(parser.parse_args())
 
 # validate input params
-if args['samples'] > train_data.shape[0] or constants.num_samples > train_data.shape[0]:
+if args['samples'] > len(train_data) or constants.num_samples > len(train_data):
     sys.exit('Error: there are only {} samples in the dataset, use a smaller sample size'.format(
-        train_data.shape[0]))
+        len(train_data)))
 
 # single sample informations
 # the length of the audio file in seconds is audio.shape / sample_rate
-audio, sample_rate = tf.audio.decode_wav(tf.io.read_file(os.path.join(
-    data_dir, train_data.path_from_data_dir[0])))
-log.info('Shape of the audio file: {}'.format(audio.shape))
-log.info('Sample rate of waveform: {}'.format(sample_rate))
-del audio
-del sample_rate
+# audio, sample_rate = tf.audio.decode_wav(tf.io.read_file(os.path.join(
+#     data_dir, train_data.path_from_data_dir[0])))
+# log.info('Shape of the audio file: {}'.format(audio.shape))
+# log.info('Sample rate of waveform: {}'.format(sample_rate))
+# del audio
+# del sample_rate
 
 # shape of the data is (n, 1, x, 128) where
 #   n is the number of audio files
@@ -97,7 +91,6 @@ else:
 # x_test = utils.load_dataset_mel_spectogram(
 #     dataset=test_data, num_audio_files=args['samples'], num_mel_filters=args['melFilters'], data_dir=data_dir)
 log.info('Samples shape: {}'.format(x_train.shape))
-del train_csv
 del train_data
 # del test_csv
 # del test_data

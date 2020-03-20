@@ -56,10 +56,12 @@ def load_dataset_mel_spectogram(
     longest_specgram = 0
 
     # data parsing
-    while numpy_specgrams is None or len(numpy_specgrams) < num_audio_files:
-        sample = dataset.path_from_data_dir.sample()
+    for sample in dataset:
+        if numpy_specgrams is not None and len(numpy_specgrams) == num_audio_files:
+            break
+
         mel_specgram = convert_wav_to_mel_spec(os.path.join(
-            data_dir, sample.item()), num_mel_filters=num_mel_filters)
+            data_dir, sample), num_mel_filters=num_mel_filters)
 
         if numpy_specgrams is None:
             numpy_specgrams = mel_specgram[np.newaxis, ...]
