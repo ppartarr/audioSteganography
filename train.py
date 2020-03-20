@@ -14,9 +14,6 @@ import sys
 # tensorflow
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint
 
-# memory investigation
-from pympler import muppy, summary
-
 # logging
 import logging as log
 log.basicConfig(format='%(asctime)s.%(msecs)06d: %(message)s',
@@ -81,17 +78,20 @@ log.info('Samples shape: {}'.format(x_train.shape))
 del train_data
 
 # we split training set into two halfs.
-train_spectrograms = x_train.shape[2]
-secret_audio_files = x_train[0:x_train.shape[0] // 2]
-cover_audio_files = x_train[x_train.shape[0] // 2:]
+train_spectrograms_shape = x_train.shape
+log.info('Generating model instance')
+model = model.steg_model(train_spectrograms_shape[1:], pretrain=False)
+
+log.info('Generating secret training data subset')
+secret_audio_files = x_train[0:train_spectrograms_shape[0] // 2]
+log.info('Generating cover training data subset')
+cover_audio_files = x_train[train_spectrograms_shape[0] // 2:]
 del x_train
 
-summary.print_(summary.summarize(muppy.get_objects()))
-
-model = model.steg_model(cover_audio_files.shape[1:], pretrain=False)
-
+log.info('Generating data given to train function')
 x_data = [secret_audio_files, cover_audio_files]
-y_data = np.concatenate((secret_audio_files, cover_audio_files), axis=3)
+del secret_audio_files
+del cover_audio_files
 
 # callbacks
 callback_tensorboard = TensorBoard(
@@ -105,6 +105,6 @@ model.fit(x=x_data, y=x_data, epochs=args['epochs'],
 
 # save model
 model_hdf5 = 'model-{}-n{}.hdf5'.format(
-    datetime.datetime.now().strftime("%Y%m%d_%H%M"), train_spectrograms)
+    datetime.datetime.now().strftime("%Y%m%d_%H%M"), train_spectrograms_shape[2])
 model.save_weights(model_hdf5)
 log.info('Model weights saved at {}'.format(model_hdf5))
