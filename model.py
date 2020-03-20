@@ -183,11 +183,11 @@ def steg_model(input_shape, pretrain=False):
         [rconv_3x3, rconv_4x4, rconv_5x5, rconv_6x6, rconv_7x7, rconv_8x8], axis=3, name="revl_concat_1")
 
     rconv_8x8 = Conv2D(64, kernel_size=3, padding="same",
-                       activation='relu', name='revl_conv5x5_f')(rconcat_1)
+                       activation='relu', name='revl_conv8x8_f')(rconcat_1)
     rconv_7x7 = Conv2D(64, kernel_size=3, padding="same",
-                       activation='relu', name='revl_conv5x5_f')(rconcat_1)
+                       activation='relu', name='revl_conv7x7_f')(rconcat_1)
     rconv_6x6 = Conv2D(64, kernel_size=3, padding="same",
-                       activation='relu', name='revl_conv5x5_f')(rconcat_1)
+                       activation='relu', name='revl_conv6x6_f')(rconcat_1)
     rconv_5x5 = Conv2D(64, kernel_size=3, padding="same",
                        activation='relu', name='revl_conv5x5_f')(rconcat_1)
     rconv_4x4 = Conv2D(64, kernel_size=3, padding="same",
