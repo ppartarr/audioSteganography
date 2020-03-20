@@ -13,7 +13,6 @@ import os
 import librosa
 import librosa.display
 import librosa.feature
-import matplotlib.pyplot as plt
 
 log.basicConfig(format='%(asctime)s.%(msecs)06d: %(message)s',
                 datefmt='%Y-%m-%d %H:%M:%S', level=log.INFO)
@@ -25,7 +24,7 @@ parser.add_argument("--model", required=True, help="path to trained model")
 parser.add_argument("--secret", required=True,
                     help="path to secret audio file")
 parser.add_argument("--cover", required=True, help="path to audio file")
-parser.add_argument("--length", required=True, type=int,
+parser.add_argument("--length", required=False, type=int,
                     help="length of the spectrogram")
 args = vars(parser.parse_args())
 
@@ -38,8 +37,11 @@ mdl = model.steg_model(shape, pretrain=False)
 mdl.load_weights(args['model'])
 
 # convert wav to spectrograms
-secret_in = utils.pad_single(utils.convert_wav_to_mel_spec(args['secret']), args['length'])
-cover_in = utils.pad_single(utils.convert_wav_to_mel_spec(args['cover']), args['length'])
+secret_in = utils.convert_wav_to_mel_spec(args['secret'])
+cover_in = utils.convert_wav_to_mel_spec(args['cover'])
+if args['length'] is not None:
+    secret_in = utils.pad_single(secret_in, args['length'])
+    cover_in = utils.pad_single(cover_in, args['length'])
 
 # predict the output return two tensor wav
 secret_out, cover_out = mdl.predict(
