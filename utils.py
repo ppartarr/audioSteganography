@@ -36,18 +36,24 @@ def pad_single(
     return specgram_pad.numpy()
 
 
-def load_dataset_mel_spectogram(
+def load_dataset_mel_spectrogram(
         dataset=[],
         data_dir="data",
         num_audio_files=100,
         num_mel_filters=constants.num_mel_filters,
         lower_edge_hertz=constants.lower_edge_hertz,
-        upper_edge_hertz=constants.upper_edge_hertz):
+        upper_edge_hertz=constants.upper_edge_hertz,
+        fixed_length=False):
     """
     Loads training and test datasets, from TIMIT and convert into spectrogram using STFT
     Arguments:
         num_audio_samples_per_class_train: number of audio per class to load into training dataset
     """
+
+    if fixed_length:
+        return load_fixed_dataset_mel_spectrogram(
+            dataset, data_dir, num_audio_files,
+            num_mel_filters, lower_edge_hertz, upper_edge_hertz)
 
     # list initialization
     numpy_specgrams = None
@@ -84,6 +90,37 @@ def load_dataset_mel_spectogram(
 
         print('Parsing data progress: {}% ({}/{})'.format(
             len(numpy_specgrams) * 100 // num_audio_files, len(numpy_specgrams), num_audio_files), end="\r")
+
+    return numpy_specgrams
+
+
+def load_fixed_dataset_mel_spectrogram(
+        dataset=[],
+        data_dir="data",
+        num_audio_files=100,
+        num_mel_filters=constants.num_mel_filters,
+        lower_edge_hertz=constants.lower_edge_hertz,
+        upper_edge_hertz=constants.upper_edge_hertz,
+        fixed_length=False):
+
+    # list initialization
+    sample_specgram = convert_wav_to_mel_spec(os.path.join(
+        data_dir, dataset[0]), num_mel_filters=num_mel_filters)
+    numpy_specgrams = np.empty(
+        (num_audio_files, sample_specgram.shape[0], sample_specgram.shape[1], sample_specgram.shape[2]), dtype=np.float32)
+    numpy_specgrams.flags.writeable = True
+
+    # data parsing
+    for idx in range(num_audio_files):
+        sample = dataset[idx]
+
+        mel_specgram = convert_wav_to_mel_spec(os.path.join(
+            data_dir, sample), num_mel_filters=num_mel_filters)
+
+        numpy_specgrams[idx] = mel_specgram
+
+        print('Parsing data progress: {}% ({}/{})'.format(
+            (idx + 1) * 100 // num_audio_files, idx + 1, num_audio_files), end="\r")
 
     return numpy_specgrams
 
