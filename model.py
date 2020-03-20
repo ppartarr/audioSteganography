@@ -201,7 +201,7 @@ def steg_model(input_shape, pretrain=False):
     secret_pred = Conv2D(constants.num_mel_filters, kernel_size=1, padding="same",
                          name='revl_conv_f')(rconcat_f1)
 
-    model = Model(inputs=[secret, cover], outputs=[cover_pred, secret_pred])
+    model = Model(inputs=[secret, cover], outputs=[secret_pred, cover_pred])
 
     # Compile model
     model.compile(optimizer='adam', loss=lossFns, loss_weights=lossWeights)
