@@ -23,9 +23,6 @@ log.basicConfig(format='%(asctime)s.%(msecs)06d: %(message)s',
                 datefmt='%Y-%m-%d %H:%M:%S', level=log.INFO)
 log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
-# regulate tensorflow verbosity
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
-
 # import TIMIT dataset
 data_dir = "data"
 train_csv = pd.concat([pd.read_csv(os.path.join(
@@ -36,7 +33,6 @@ del train_csv
 
 # configuration statistics
 log.info('Training examples: {}'.format(len(train_data)))
-# log.info('Test examples: {}'.format(test_data.shape[0]))
 
 # parse command line args
 parser = argparse.ArgumentParser(
@@ -56,6 +52,8 @@ parser.add_argument('--saveDataset', '-sD', action='store_true', default=True,
                     help='serialize dataset once parsed')
 parser.add_argument('--loadDataset', '-lD', type=str,
                     help='parse serialized dataset')
+parser.add_argument('--fixedDataset', '-fD', action='store_true', default=False,
+                    help='dataset has fixed length')
 args = vars(parser.parse_args())
 
 # validate input params
@@ -63,49 +61,33 @@ if args['samples'] > len(train_data) or constants.num_samples > len(train_data):
     sys.exit('Error: there are only {} samples in the dataset, use a smaller sample size'.format(
         len(train_data)))
 
-# single sample informations
-# the length of the audio file in seconds is audio.shape / sample_rate
-# audio, sample_rate = tf.audio.decode_wav(tf.io.read_file(os.path.join(
-#     data_dir, train_data.path_from_data_dir[0])))
-# log.info('Shape of the audio file: {}'.format(audio.shape))
-# log.info('Sample rate of waveform: {}'.format(sample_rate))
-# del audio
-# del sample_rate
-
-# shape of the data is (n, 1, x, 128) where
-#   n is the number of audio files
-#   1 is the number of channels (mono)
-#   x is the number of 64ms spectrograms with 716% overlap
-#   128 is the number of mel filters
 if args['loadDataset'] is not None:
     x_train = np.load(args['loadDataset'])
     log.info('Dataset loaded from {}'.format(args['loadDataset']))
 else:
-    x_train = utils.load_dataset_mel_spectogram(
-        dataset=train_data, num_audio_files=args['samples'], num_mel_filters=args['melFilters'], data_dir=data_dir)
+    x_train = utils.load_dataset_mel_spectrogram(
+        dataset=train_data,
+        data_dir=data_dir,
+        num_audio_files=args['samples'],
+        num_mel_filters=args['melFilters'],
+        fixed_length=args['fixedDataset'])
     if args['saveDataset']:
         datasetFname = 'dataset-{}'.format(
             datetime.datetime.now().strftime("%Y%m%d_%H%M"))
         np.save(datasetFname, x_train)
         log.info('Dataset saved into {}.npy'.format(datasetFname))
-# x_test = utils.load_dataset_mel_spectogram(
-#     dataset=test_data, num_audio_files=args['samples'], num_mel_filters=args['melFilters'], data_dir=data_dir)
+
 log.info('Samples shape: {}'.format(x_train.shape))
 del train_data
-# del test_csv
-# del test_data
 
 # we split training set into two halfs.
 train_spectrograms = x_train.shape[2]
 secret_audio_files = x_train[0:x_train.shape[0] // 2]
 cover_audio_files = x_train[x_train.shape[0] // 2:]
 del x_train
-# del x_test
 
 summary.print_(summary.summarize(muppy.get_objects()))
 
-# print(type(secret_audio_files[0]))
-# print(secret_audio_files.shape[1:])
 model = model.steg_model(cover_audio_files.shape[1:], pretrain=False)
 
 x_data = [secret_audio_files, cover_audio_files]
