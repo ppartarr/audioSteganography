@@ -69,8 +69,9 @@ else:
         num_mel_filters=args['melFilters'],
         fixed_length=args['fixedDataset'])
     if args['saveDataset']:
-        datasetFname = 'dataset-{}'.format(
-            datetime.datetime.now().strftime("%Y%m%d_%H%M"))
+        datasetFname = 'dataset-{}-{}'.format(
+            datetime.datetime.now().strftime("%Y%m%d_%H%M"),
+            args['samples'])
         np.save(datasetFname, x_train)
         log.info('Dataset saved into {}.npy'.format(datasetFname))
 
