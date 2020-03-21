@@ -27,21 +27,20 @@ parser.add_argument("--secret", required=True,
 parser.add_argument("--cover", required=True, help="path to audio file")
 parser.add_argument("--length", required=False, type=int,
                     help="length of the audio in seconds")
-parser.add_argument('--plot', '-p', required=True,
+parser.add_argument('--plot', '-p', required=False,
                     help='plot the mel spectrograms of input and ouput audio', action='store_true', default=True)
 args = vars(parser.parse_args())
 
 # config
-shape = (1, args['length'], constants.num_mel_filters)
 output_dir = os.path.join('predictions', os.path.basename(args['model']))
-
-# load model
-mdl = model.steg_model(shape, pretrain=False)
-mdl.load_weights(args['model'])
 
 # convert wav to spectrograms
 secret_in = utils.convert_wav_to_mel_spec(args['secret'])
 cover_in = utils.convert_wav_to_mel_spec(args['cover'])
+
+# load model
+mdl = model.steg_model(secret_in.shape)
+mdl.load_weights(args['model'])
 
 if args['length'] is not None:
     secret_in = utils.pad_single(secret_in, args['length'])

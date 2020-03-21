@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
-from tensorflow.keras.layers import Input, Conv2D, concatenate, GaussianNoise
+from tensorflow.keras.layers import Input, Conv2D, concatenate
 from tensorflow.keras.models import Model
 from tensorflow.keras import losses
-
-import constants
 
 
 def steg_model(input_shape, pretrain=False):
@@ -118,15 +116,12 @@ def steg_model(input_shape, pretrain=False):
     hconcat_f1 = concatenate(
         [hconv_5x5, hconv_4x4, hconv_3x3], axis=3, name="hide_concat_3")
 
-    cover_pred = Conv2D(constants.num_mel_filters, kernel_size=1, padding="same",
+    cover_pred = Conv2D(input_shape[2], kernel_size=1, padding="same",
                         name='hide_conv_f')(hconcat_f1)
-
-    # Noise layer
-    noise_ip = GaussianNoise(0.1)(cover_pred)
 
     # Reveal network - patches [3*3,3*3,3*3]
     rconv_3x3 = Conv2D(64, kernel_size=3, padding="same",
-                       activation='relu', name='revl_conv3x3_1')(noise_ip)
+                       activation='relu', name='revl_conv3x3_1')(cover_pred)
     rconv_3x3 = Conv2D(64, kernel_size=3, padding="same",
                        activation='relu', name='revl_conv3x3_2')(rconv_3x3)
     rconv_3x3 = Conv2D(64, kernel_size=3, padding="same",
@@ -135,7 +130,7 @@ def steg_model(input_shape, pretrain=False):
                        activation='relu', name='revl_conv3x3_4')(rconv_3x3)
 
     rconv_4x4 = Conv2D(64, kernel_size=3, padding="same",
-                       activation='relu', name='revl_conv4x4_1')(noise_ip)
+                       activation='relu', name='revl_conv4x4_1')(cover_pred)
     rconv_4x4 = Conv2D(64, kernel_size=3, padding="same",
                        activation='relu', name='revl_conv4x4_2')(rconv_4x4)
     rconv_4x4 = Conv2D(64, kernel_size=3, padding="same",
@@ -144,7 +139,7 @@ def steg_model(input_shape, pretrain=False):
                        activation='relu', name='revl_conv4x4_4')(rconv_4x4)
 
     rconv_5x5 = Conv2D(64, kernel_size=3, padding="same",
-                       activation='relu', name='revl_conv5x5_1')(noise_ip)
+                       activation='relu', name='revl_conv5x5_1')(cover_pred)
     rconv_5x5 = Conv2D(64, kernel_size=3, padding="same",
                        activation='relu', name='revl_conv5x5_2')(rconv_5x5)
     rconv_5x5 = Conv2D(64, kernel_size=3, padding="same",
@@ -153,7 +148,7 @@ def steg_model(input_shape, pretrain=False):
                        activation='relu', name='revl_conv5x5_4')(rconv_5x5)
 
     rconv_6x6 = Conv2D(64, kernel_size=3, padding="same",
-                       activation='relu', name='revl_conv6x6_1')(noise_ip)
+                       activation='relu', name='revl_conv6x6_1')(cover_pred)
     rconv_6x6 = Conv2D(64, kernel_size=3, padding="same",
                        activation='relu', name='revl_conv6x6_2')(rconv_6x6)
     rconv_6x6 = Conv2D(64, kernel_size=3, padding="same",
@@ -162,7 +157,7 @@ def steg_model(input_shape, pretrain=False):
                        activation='relu', name='revl_conv6x6_4')(rconv_6x6)
 
     rconv_7x7 = Conv2D(64, kernel_size=3, padding="same",
-                       activation='relu', name='revl_conv7x7_1')(noise_ip)
+                       activation='relu', name='revl_conv7x7_1')(cover_pred)
     rconv_7x7 = Conv2D(64, kernel_size=3, padding="same",
                        activation='relu', name='revl_conv7x7_2')(rconv_7x7)
     rconv_7x7 = Conv2D(64, kernel_size=3, padding="same",
@@ -171,7 +166,7 @@ def steg_model(input_shape, pretrain=False):
                        activation='relu', name='revl_conv7x7_4')(rconv_7x7)
 
     rconv_8x8 = Conv2D(64, kernel_size=3, padding="same",
-                       activation='relu', name='revl_conv8x8_1')(noise_ip)
+                       activation='relu', name='revl_conv8x8_1')(cover_pred)
     rconv_8x8 = Conv2D(64, kernel_size=3, padding="same",
                        activation='relu', name='revl_conv8x8_2')(rconv_8x8)
     rconv_8x8 = Conv2D(64, kernel_size=3, padding="same",
@@ -198,7 +193,7 @@ def steg_model(input_shape, pretrain=False):
     rconcat_f1 = concatenate(
         [rconv_8x8, rconv_7x7, rconv_6x6, rconv_5x5, rconv_4x4, rconv_3x3], axis=3, name="revl_concat_2")
 
-    secret_pred = Conv2D(constants.num_mel_filters, kernel_size=1, padding="same",
+    secret_pred = Conv2D(input_shape[2], kernel_size=1, padding="same",
                          name='revl_conv_f')(rconcat_f1)
 
     model = Model(inputs=[secret, cover], outputs=[secret_pred, cover_pred])
