@@ -10,6 +10,7 @@ import utils
 import model
 import constants
 import sys
+import socket
 
 # tensorflow
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, LearningRateScheduler
@@ -121,7 +122,9 @@ model.fit(x=x_data, y=x_data,
           callbacks=[callback_lr_schedule, callback_tensorboard, callback_checkpoint])
 
 # save model
-model_hdf5 = 'model-{}-n{}.hdf5'.format(
-    datetime.datetime.now().strftime("%Y%m%d_%H%M"), train_spectrograms_shape[2])
+model_hdf5 = '{}-{}-n{}.hdf5'.format(
+    socket.gethostname(),
+    datetime.datetime.now().strftime("%Y%m%d_%H%M"),
+    train_spectrograms_shape[2])
 model.save_weights(model_hdf5)
 log.info('Model weights saved at {}'.format(model_hdf5))
