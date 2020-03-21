@@ -72,7 +72,7 @@ else:
     if args['saveDataset']:
         datasetFname = 'dataset-{}-{}-f{}-m{}'.format(
             datetime.datetime.now().strftime("%Y%m%d_%H%M"),
-            args['samples'], args['melFilters'])
+            args['samples'], args['frameLength'], args['melFilters'])
         np.save(datasetFname, x_train)
         log.info('Dataset saved into {}.npy'.format(datasetFname))
 
