@@ -111,7 +111,7 @@ def load_fixed_dataset_mel_spectrogram(
     sample_specgram = convert_wav_to_mel_spec(os.path.join(
         data_dir, dataset[0]), n_fft=frame_length)
     numpy_specgrams = np.empty(
-        (num_audio_files, sample_specgram.shape[0], sample_specgram.shape[1], sample_specgram.shape[2]), dtype=np.float32)
+        (num_audio_files, sample_specgram.shape[0], sample_specgram.shape[1], sample_specgram.shape[2]), dtype=np.complex64)
     numpy_specgrams.flags.writeable = True
 
     # data parsing
@@ -143,7 +143,11 @@ def convert_wav_to_mel_spec(
     """
 
     audio, sample_rate = librosa.load(path_to_wav, sr=constants.sample_rate)
-    stft = librosa.core.stft(audio)
+    stft = librosa.core.stft(
+        audio,
+        win_length=int(np.ceil(0.010 * constants.sample_rate)),
+        n_fft=512,
+        center=False)
     return librosa_melspec_to_tf(stft)
 
 
@@ -161,7 +165,10 @@ def convert_mel_spec_to_wav(
     """
 
     stft = tf_melspec_to_librosa(tf_melspec)
-    audio = librosa.core.istft(stft.numpy())
+    audio = librosa.core.istft(
+        stft.numpy(),
+        win_length=int(np.ceil(0.010 * constants.sample_rate)),
+        center=False)
     return librosa_wav_to_tf(audio)
 
 
