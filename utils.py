@@ -228,3 +228,11 @@ def tf_wav_to_librosa(tf_wav, sample_rate=constants.sample_rate):
     audio, sample_rate = tf.audio.decode_wav(tf_wav)
     print('audio shape: ', audio.shape)
     return audio[0]
+
+
+def calculate_num_mels_from_audio_length(
+        frame_step=constants.frame_step,
+        sample_rate=constants.sample_rate,
+        audio_length=constants.audio_length):
+
+    return (audio_length * sample_rate) / frame_step
