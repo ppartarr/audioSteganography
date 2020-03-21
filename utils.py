@@ -40,6 +40,7 @@ def load_dataset_mel_spectrogram(
         dataset=[],
         data_dir="data",
         num_audio_files=100,
+        frame_length=constants.frame_length,
         num_mel_filters=constants.num_mel_filters,
         lower_edge_hertz=constants.lower_edge_hertz,
         upper_edge_hertz=constants.upper_edge_hertz,
@@ -67,7 +68,7 @@ def load_dataset_mel_spectrogram(
             break
 
         mel_specgram = convert_wav_to_mel_spec(os.path.join(
-            data_dir, sample), num_mel_filters=num_mel_filters)
+            data_dir, sample), num_mel_filters=num_mel_filters, n_fft=frame_length)
 
         if numpy_specgrams is None:
             numpy_specgrams = mel_specgram[np.newaxis, ...]
@@ -98,6 +99,7 @@ def load_fixed_dataset_mel_spectrogram(
         dataset=[],
         data_dir="data",
         num_audio_files=100,
+        frame_length=constants.frame_length,
         num_mel_filters=constants.num_mel_filters,
         lower_edge_hertz=constants.lower_edge_hertz,
         upper_edge_hertz=constants.upper_edge_hertz,
@@ -105,7 +107,7 @@ def load_fixed_dataset_mel_spectrogram(
 
     # list initialization
     sample_specgram = convert_wav_to_mel_spec(os.path.join(
-        data_dir, dataset[0]), num_mel_filters=num_mel_filters)
+        data_dir, dataset[0]), num_mel_filters=num_mel_filters, n_fft=frame_length)
     numpy_specgrams = np.empty(
         (num_audio_files, sample_specgram.shape[0], sample_specgram.shape[1], sample_specgram.shape[2]), dtype=np.float32)
     numpy_specgrams.flags.writeable = True
