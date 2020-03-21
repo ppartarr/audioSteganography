@@ -12,7 +12,7 @@ import constants
 import sys
 
 # tensorflow
-from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint
+from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, LearningRateScheduler
 
 # logging
 import logging as log
@@ -94,15 +94,30 @@ x_data = [secret_audio_files, cover_audio_files]
 del secret_audio_files
 del cover_audio_files
 
+
+def lr_scheduler(epoch):
+    if epoch < 200:
+        return 0.001
+    elif epoch < 400:
+        return 0.0003
+    elif epoch < 600:
+        return 0.0001
+    else:
+        return 0.00003
+
+
 # callbacks
 callback_tensorboard = TensorBoard(
     log_dir=log_dir, histogram_freq=1)
 callback_checkpoint = ModelCheckpoint(
     log_dir, monitor='loss', verbose=1, save_best_only=True, mode='max')
+callback_lr_schedule = LearningRateScheduler(lr_scheduler)
 
 # train model
-model.fit(x=x_data, y=x_data, epochs=args['epochs'],
-          batch_size=args['batchSize'], callbacks=[callback_tensorboard, callback_checkpoint])
+model.fit(x=x_data, y=x_data,
+          epochs=args['epochs'],
+          batch_size=args['batchSize'],
+          callbacks=[callback_lr_schedule, callback_tensorboard, callback_checkpoint])
 
 # save model
 model_hdf5 = 'model-{}-n{}.hdf5'.format(
