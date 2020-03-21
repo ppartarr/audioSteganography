@@ -41,7 +41,6 @@ def load_dataset_mel_spectrogram(
         data_dir="data",
         num_audio_files=100,
         frame_length=constants.frame_length,
-        num_mel_filters=constants.num_mel_filters,
         lower_edge_hertz=constants.lower_edge_hertz,
         upper_edge_hertz=constants.upper_edge_hertz,
         fixed_length=False):
@@ -57,7 +56,6 @@ def load_dataset_mel_spectrogram(
             data_dir=data_dir,
             frame_length=frame_length,
             num_audio_files=num_audio_files,
-            num_mel_filters=num_mel_filters,
             lower_edge_hertz=lower_edge_hertz,
             upper_edge_hertz=upper_edge_hertz)
 
@@ -73,7 +71,7 @@ def load_dataset_mel_spectrogram(
             break
 
         mel_specgram = convert_wav_to_mel_spec(os.path.join(
-            data_dir, sample), num_mel_filters=num_mel_filters, n_fft=frame_length)
+            data_dir, sample), n_fft=frame_length)
 
         if numpy_specgrams is None:
             numpy_specgrams = mel_specgram[np.newaxis, ...]
@@ -105,14 +103,13 @@ def load_fixed_dataset_mel_spectrogram(
         data_dir="data",
         num_audio_files=100,
         frame_length=constants.frame_length,
-        num_mel_filters=constants.num_mel_filters,
         lower_edge_hertz=constants.lower_edge_hertz,
         upper_edge_hertz=constants.upper_edge_hertz,
         fixed_length=False):
 
     # list initialization
     sample_specgram = convert_wav_to_mel_spec(os.path.join(
-        data_dir, dataset[0]), num_mel_filters=num_mel_filters, n_fft=frame_length)
+        data_dir, dataset[0]), n_fft=frame_length)
     numpy_specgrams = np.empty(
         (num_audio_files, sample_specgram.shape[0], sample_specgram.shape[1], sample_specgram.shape[2]), dtype=np.float32)
     numpy_specgrams.flags.writeable = True
@@ -122,7 +119,7 @@ def load_fixed_dataset_mel_spectrogram(
         sample = dataset[idx]
 
         mel_specgram = convert_wav_to_mel_spec(os.path.join(
-            data_dir, sample), num_mel_filters=num_mel_filters)
+            data_dir, sample))
 
         numpy_specgrams[idx] = mel_specgram
 
@@ -135,7 +132,6 @@ def load_fixed_dataset_mel_spectrogram(
 def convert_wav_to_mel_spec(
         path_to_wav,
         sr=constants.sample_rate,
-        num_mel_filters=constants.num_mel_filters,
         fmax=constants.upper_edge_hertz,
         hop_length=constants.frame_step,
         sample_rate=constants.sample_rate,
@@ -147,17 +143,8 @@ def convert_wav_to_mel_spec(
     """
 
     audio, sample_rate = librosa.load(path_to_wav, sr=constants.sample_rate)
-
-    librosa_melspec = librosa.feature.melspectrogram(
-        y=audio,
-        sr=sr,
-        n_fft=n_fft,
-        hop_length=hop_length,
-        n_mels=num_mel_filters,
-        fmax=fmax,
-        center=True)
-
-    return librosa_melspec_to_tf(librosa_melspec)
+    stft = librosa.core.stft(audio)
+    return librosa_melspec_to_tf(stft)
 
 
 def convert_mel_spec_to_wav(
@@ -173,18 +160,9 @@ def convert_mel_spec_to_wav(
         Tensor wav shape: (1, t)
     """
 
-    librosa_melspec = tf_melspec_to_librosa(tf_melspec)
-
-    librosa_wav = librosa.feature.inverse.mel_to_audio(
-        librosa_melspec.numpy(),
-        sr=sr,
-        n_fft=n_fft,
-        hop_length=hop_length,
-        fmax=fmax,
-        center=True)
-
-    # convert librosa wav back to tensor wav
-    return librosa_wav_to_tf(librosa_wav)
+    stft = tf_melspec_to_librosa(tf_melspec)
+    audio = librosa.core.istft(stft.numpy())
+    return librosa_wav_to_tf(audio)
 
 
 def tf_melspec_to_librosa(tf_melspec):
