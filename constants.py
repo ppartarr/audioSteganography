@@ -2,6 +2,7 @@ epochs = 300
 num_samples = 4620
 batch_size = 64
 sample_rate = 16000
+audio_length = 2.5
 
 # STFT transform
 lower_edge_hertz = 20.0
