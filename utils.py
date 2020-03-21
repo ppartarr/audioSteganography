@@ -53,8 +53,13 @@ def load_dataset_mel_spectrogram(
 
     if fixed_length:
         return load_fixed_dataset_mel_spectrogram(
-            dataset, data_dir, num_audio_files,
-            num_mel_filters, lower_edge_hertz, upper_edge_hertz)
+            dataset=dataset,
+            data_dir=data_dir,
+            frame_length=frame_length,
+            num_audio_files=num_audio_files,
+            num_mel_filters=num_mel_filters,
+            lower_edge_hertz=lower_edge_hertz,
+            upper_edge_hertz=upper_edge_hertz)
 
     # list initialization
     numpy_specgrams = None
