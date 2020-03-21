@@ -66,12 +66,13 @@ else:
         dataset=train_data,
         data_dir=data_dir,
         num_audio_files=args['samples'],
+        frame_length=args['frameLength'],
         num_mel_filters=args['melFilters'],
         fixed_length=args['fixedDataset'])
     if args['saveDataset']:
-        datasetFname = 'dataset-{}-{}'.format(
+        datasetFname = 'dataset-{}-{}-f{}-m{}'.format(
             datetime.datetime.now().strftime("%Y%m%d_%H%M"),
-            args['samples'])
+            args['samples'], args['melFilters'])
         np.save(datasetFname, x_train)
         log.info('Dataset saved into {}.npy'.format(datasetFname))
 
