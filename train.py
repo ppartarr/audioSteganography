@@ -85,9 +85,9 @@ log.info('Generating model instance')
 model = model.steg_model(train_spectrograms_shape[1:], pretrain=False)
 
 log.info('Generating secret training data subset')
-secret_audio_files = x_train[0:train_spectrograms_shape[0] // 2]
+secret_audio_files = x_train
 log.info('Generating cover training data subset')
-cover_audio_files = x_train[train_spectrograms_shape[0] // 2:]
+cover_audio_files = np.flip(x_train)
 del x_train
 
 log.info('Generating data given to train function')
