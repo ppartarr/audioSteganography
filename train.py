@@ -11,6 +11,8 @@ import model
 import constants
 import sys
 import socket
+import generator
+import math
 
 # tensorflow
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, LearningRateScheduler
@@ -112,10 +114,14 @@ callback_checkpoint = ModelCheckpoint(
     log_dir, monitor='loss', verbose=1, save_best_only=True, mode='max')
 callback_lr_schedule = LearningRateScheduler(lr_scheduler)
 
+data_gen = generator.DataGenerator(x_data, samples=args['samples'],
+                                   batch_size=args['batchSize'])
+
 # train model
-model.fit(x=x_data, y=x_data,
+model.fit(x=data_gen,
           epochs=args['epochs'],
-          batch_size=args['batchSize'],
+          steps_per_epoch=math.floor(args['samples'] // args['batchSize']),
+          #   use_multiprocessing=True,
           callbacks=[callback_lr_schedule, callback_tensorboard, callback_checkpoint])
 
 # save model
