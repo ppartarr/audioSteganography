@@ -23,17 +23,6 @@ log.basicConfig(format='%(asctime)s.%(msecs)06d: %(message)s',
                 datefmt='%Y-%m-%d %H:%M:%S', level=log.INFO)
 log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
-# import TIMIT dataset
-data_dir = "data"
-train_csv = pd.concat([pd.read_csv(os.path.join(
-    data_dir, "train_data.csv")), pd.read_csv(os.path.join(data_dir, "test_data.csv"))])
-train_data = [sample for sample in train_csv[train_csv.path_from_data_dir.str.contains(
-    'WAV.wav', na=False)]['path_from_data_dir']]
-del train_csv
-
-# configuration statistics
-log.info('Training examples: {}'.format(len(train_data)))
-
 # parse command line args
 parser = argparse.ArgumentParser(
     description='Train a model to hide a secret audio message into a cover audio message'
@@ -54,15 +43,23 @@ parser.add_argument('--fixedDataset', '-fD', action='store_true', default=False,
                     help='dataset has fixed length')
 args = vars(parser.parse_args())
 
-# validate input params
-if args['samples'] > len(train_data) or constants.num_samples > len(train_data):
-    sys.exit('Error: there are only {} samples in the dataset, use a smaller sample size'.format(
-        len(train_data)))
-
 if args['loadDataset'] is not None:
     x_train = np.load(args['loadDataset'])
     log.info('Dataset loaded from {}'.format(args['loadDataset']))
 else:
+    # import TIMIT dataset
+    data_dir = "data"
+    train_csv = pd.concat([pd.read_csv(os.path.join(
+        data_dir, "train_data.csv")), pd.read_csv(os.path.join(data_dir, "test_data.csv"))])
+    train_data = [sample for sample in train_csv[train_csv.path_from_data_dir.str.contains(
+        'WAV.wav', na=False)]['path_from_data_dir']]
+    del train_csv
+
+    # validate input params
+    if args['samples'] > len(train_data) or constants.num_samples > len(train_data):
+        sys.exit('Error: there are only {} samples in the dataset, use a smaller sample size'.format(
+            len(train_data)))
+
     x_train = utils.load_dataset_mel_spectrogram(
         dataset=train_data,
         data_dir=data_dir,
@@ -76,8 +73,11 @@ else:
         np.save(datasetFname, x_train)
         log.info('Dataset saved into {}.npy'.format(datasetFname))
 
+    del train_data
+
+# configuration statistics
+log.info('Training examples: {}'.format(len(x_train)))
 log.info('Samples shape: {}'.format(x_train.shape))
-del train_data
 
 # we split training set into two halfs.
 train_spectrograms_shape = x_train.shape
