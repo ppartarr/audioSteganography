@@ -1,5 +1,5 @@
-epochs = 10
-num_samples = 100
+epochs = 100
+num_samples = 1000
 batch_size = 32
 sample_rate = 16000
 audio_length = 2.5
