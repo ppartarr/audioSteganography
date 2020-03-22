@@ -111,7 +111,7 @@ def load_fixed_dataset_mel_spectrogram(
     sample_specgram = convert_wav_to_mel_spec(os.path.join(
         data_dir, dataset[0]), n_fft=frame_length)
     numpy_specgrams = np.empty(
-        (num_audio_files, sample_specgram.shape[0], sample_specgram.shape[1]), dtype=np.complex64)
+        (num_audio_files, sample_specgram.shape[0], sample_specgram.shape[1], sample_specgram.shape[2]), dtype=np.complex64)
     numpy_specgrams.flags.writeable = True
 
     # data parsing
@@ -178,7 +178,7 @@ def tf_melspec_to_librosa(tf_melspec):
         Tensor mel spectrogram shape: (1, t, num_mel_filters)
         Librosa mel spectrogram shape: (num_mel_filters, t)
     """
-    return tf_melspec
+    return tf.transpose(tf_melspec[0])
 
 
 def librosa_melspec_to_tf(librosa_melspec):
@@ -187,7 +187,10 @@ def librosa_melspec_to_tf(librosa_melspec):
         Tensor mel spectrogram shape: (1, t, num_mel_filters)
         Librosa mel spectrogram shape: (num_mel_filters, t)
     """
-    return tf.convert_to_tensor(librosa_melspec)
+    return tf.expand_dims(
+        tf.transpose(tf.convert_to_tensor(librosa_melspec)),
+        0
+    )
 
 
 def librosa_wav_to_tf(librosa_wav, sample_rate=constants.sample_rate):
@@ -196,7 +199,13 @@ def librosa_wav_to_tf(librosa_wav, sample_rate=constants.sample_rate):
         Librosa wav shape: t
         Tensorflow wav shape: (1, t)
     """
-    audio = tf.convert_to_tensor(librosa_wav)
+    audio = tf.transpose(
+        tf.expand_dims(
+            tf.convert_to_tensor(librosa_wav),
+            0
+        )
+    )
+
     return tf.audio.encode_wav(audio, sample_rate)
 
 
@@ -209,8 +218,8 @@ def tf_wav_to_librosa(tf_wav, sample_rate=constants.sample_rate):
     # print(tf_wav.shape)
     # print(tf_wav[0])
     audio, sample_rate = tf.audio.decode_wav(tf_wav)
-    # print('audio shape: ', audio.shape)
-    return audio
+    print('audio shape: ', audio.shape)
+    return audio[0]
 
 
 # def calculate_num_mels_from_audio_length(
