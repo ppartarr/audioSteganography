@@ -1,6 +1,6 @@
 epochs = 100
-num_samples = 1000
-batch_size = 32
+num_samples = 6300
+batch_size = 64
 sample_rate = 16000
 audio_length = 2.5
 
