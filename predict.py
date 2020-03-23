@@ -35,8 +35,8 @@ args = vars(parser.parse_args())
 output_dir = os.path.join('predictions', os.path.basename(args['model']))
 
 # convert wav to spectrograms
-secret_in = utils.convert_wav_to_mel_spec(args['secret'])
-cover_in = utils.convert_wav_to_mel_spec(args['cover'])
+secret_in = utils.convert_wav_to_stft_spec(args['secret'])
+cover_in = utils.convert_wav_to_stft_spec(args['cover'])
 
 # load model
 mdl = model.steg_model(secret_in.shape)
@@ -68,7 +68,7 @@ for output in [
     }
 ]:
     print(output['specgram'].shape)
-    wav = utils.convert_mel_spec_to_wav(output['specgram'][0])
+    wav = utils.convert_stft_spec_to_wav(output['specgram'][0])
     full_fname = os.path.join(output_dir, output['fname'])
     tf.io.write_file(full_fname, wav, name=None)
     log.info('Spectrogram converted to wav: {}'.format(full_fname))
