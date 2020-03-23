@@ -60,7 +60,7 @@ else:
         sys.exit('Error: there are only {} samples in the dataset, use a smaller sample size'.format(
             len(train_data)))
 
-    x_train = utils.load_dataset_mel_spectrogram(
+    x_train = utils.load_dataset_stft_spectrogram(
         dataset=train_data,
         data_dir=data_dir,
         num_audio_files=args['samples'],
