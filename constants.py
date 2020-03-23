@@ -9,4 +9,4 @@ lower_edge_hertz = 20.0
 upper_edge_hertz = 8000.0
 frame_length = 160
 frame_step = frame_length // 4
-num_mel_filters = 128
+num_mel_filters = 64
