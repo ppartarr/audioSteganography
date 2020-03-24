@@ -63,7 +63,7 @@ def steg_model(input_shape, pretrain=False):
         [pconv_5x5, pconv_4x4, pconv_3x3], axis=3, name="prep_concat_2")
 
     # Hiding network - patches [3*3,3*3,3*3]
-    hconcat_h = concatenate([pconcat_f1, cover], axis=3, name="hide_concat_1")
+    hconcat_h = concatenate([cover, pconcat_f1], axis=3, name="hide_concat_1")
 
     hconv_3x3 = Conv2D(64, kernel_size=3, padding="same",
                        activation='relu', name='hide_conv3x3_1')(hconcat_h)
