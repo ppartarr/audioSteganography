@@ -12,10 +12,6 @@ def steg_model(input_shape, pretrain=False):
         "hide_conv_f": losses.mean_squared_error,
         "revl_conv_f": losses.mean_squared_error,
     }
-    lossWeights = {
-        "hide_conv_f": 1.0,
-        "revl_conv_f": 0.8
-    }
 
     # Inputs
     secret = Input(shape=input_shape, name='secret')
@@ -182,6 +178,6 @@ def steg_model(input_shape, pretrain=False):
     model = Model(inputs=[secret, cover], outputs=[secret_pred, cover_pred])
 
     # Compile model
-    model.compile(optimizer='adam', loss=lossFns, loss_weights=lossWeights)
+    model.compile(optimizer='adam', loss=lossFns)
 
     return model
