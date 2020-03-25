@@ -209,7 +209,7 @@ def convert_mel_spec_to_wav(
 def convert_stft_spec_to_wav(
         tf_melspec,
         sr=constants.sample_rate,
-        hop_length=constants.hop_length,
+        hop_length=constants.frame_step,
         sample_rate=constants.sample_rate):
     """
     Converts a Tensor mel spectrogram to a Tensor wav
