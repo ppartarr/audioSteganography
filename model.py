@@ -101,20 +101,9 @@ def steg_model(input_shape, pretrain=False):
     hconv_6x6 = Conv2D(64, kernel_size=3, padding="same",
                        activation='relu', name='hide_conv6x6_4')(hconv_6x6)
 
-    hconv_7x7 = Conv2D(64, kernel_size=3, padding="same",
-                       activation='relu', name='hide_conv7x7_1')(hconcat_h)
-    hconv_7x7 = Conv2D(64, kernel_size=3, padding="same",
-                       activation='relu', name='hide_conv7x7_2')(hconv_7x7)
-    hconv_7x7 = Conv2D(64, kernel_size=3, padding="same",
-                       activation='relu', name='hide_conv7x7_3')(hconv_7x7)
-    hconv_7x7 = Conv2D(64, kernel_size=3, padding="same",
-                       activation='relu', name='hide_conv7x7_4')(hconv_7x7)
-
     hconcat_1 = concatenate(
-        [hconv_7x7, hconv_6x6, hconv_5x5, hconv_3x3, hconv_4x4, hconv_5x5], axis=3, name="hide_concat_2")
+        [hconv_6x6, hconv_5x5, hconv_3x3, hconv_4x4, hconv_5x5], axis=3, name="hide_concat_2")
 
-    hconv_7x7 = Conv2D(64, kernel_size=3, padding="same",
-                       activation='relu', name='hide_conv7x7_f')(hconcat_1)
     hconv_6x6 = Conv2D(64, kernel_size=3, padding="same",
                        activation='relu', name='hide_conv6x6_f')(hconcat_1)
     hconv_5x5 = Conv2D(64, kernel_size=3, padding="same",
@@ -125,7 +114,7 @@ def steg_model(input_shape, pretrain=False):
                        activation='relu', name='hide_conv3x3_f')(hconcat_1)
 
     hconcat_f1 = concatenate(
-        [hconv_5x5, hconv_4x4, hconv_3x3], axis=3, name="hide_concat_3")
+        [hconv_6x6, hconv_5x5, hconv_4x4, hconv_3x3], axis=3, name="hide_concat_3")
 
     cover_pred = Conv2D(input_shape[2], kernel_size=1, padding="same",
                         name='hide_conv_f')(hconcat_f1)
@@ -185,19 +174,9 @@ def steg_model(input_shape, pretrain=False):
     rconv_8x8 = Conv2D(64, kernel_size=3, padding="same",
                        activation='relu', name='revl_conv8x8_4')(rconv_8x8)
 
-    rconv_9x9 = Conv2D(64, kernel_size=3, padding="same",
-                       activation='relu', name='revl_conv9x9_1')(cover_pred)
-    rconv_9x9 = Conv2D(64, kernel_size=3, padding="same",
-                       activation='relu', name='revl_conv9x9_2')(rconv_9x9)
-    rconv_9x9 = Conv2D(64, kernel_size=3, padding="same",
-                       activation='relu', name='revl_conv9x9_3')(rconv_9x9)
-    rconv_9x9 = Conv2D(64, kernel_size=3, padding="same",
-                       activation='relu', name='revl_conv9x9_4')(rconv_9x9)
     rconcat_1 = concatenate(
-        [rconv_3x3, rconv_4x4, rconv_5x5, rconv_6x6, rconv_7x7, rconv_8x8, rconv_9x9], axis=3, name="revl_concat_1")
+        [rconv_3x3, rconv_4x4, rconv_5x5, rconv_6x6, rconv_7x7, rconv_8x8], axis=3, name="revl_concat_1")
 
-    rconv_9x9 = Conv2D(64, kernel_size=3, padding="same",
-                       activation='relu', name='revl_conv9x9_f')(rconcat_1)
     rconv_8x8 = Conv2D(64, kernel_size=3, padding="same",
                        activation='relu', name='revl_conv8x8_f')(rconcat_1)
     rconv_7x7 = Conv2D(64, kernel_size=3, padding="same",

@@ -162,7 +162,7 @@ def convert_wav_to_stft_spec(
         fmax=constants.upper_edge_hertz,
         hop_length=constants.frame_step,
         sample_rate=constants.sample_rate,
-        n_fft=constants.frame_length):
+        n_fft=constants.n_fft):
     """
     Converts a raw wav to a Tensor mel spectrogram
         Raw wave shape: (samples, 1)
@@ -172,8 +172,9 @@ def convert_wav_to_stft_spec(
     audio, sample_rate = librosa.load(path_to_wav, sr=constants.sample_rate)
     stft = librosa.core.stft(
         audio,
+        hop_length=hop_length,
         win_length=int(np.ceil(0.010 * constants.sample_rate)),
-        n_fft=512,
+        n_fft=n_fft,
         center=False)
     return librosa_melspec_to_tf(stft)
 
@@ -208,19 +209,17 @@ def convert_mel_spec_to_wav(
 def convert_stft_spec_to_wav(
         tf_melspec,
         sr=constants.sample_rate,
-        fmax=constants.upper_edge_hertz,
-        hop_length=constants.frame_step,
-        sample_rate=constants.sample_rate,
-        n_fft=constants.frame_length):
+        hop_length=constants.hop_length,
+        sample_rate=constants.sample_rate):
     """
     Converts a Tensor mel spectrogram to a Tensor wav
         Tensor mel spectrogram shape: (1, t, num_mel_filters)
         Tensor wav shape: (1, t)
     """
-
     stft = tf_melspec_to_librosa(tf_melspec)
     audio = librosa.core.istft(
         stft.numpy(),
+        hop_length=hop_length,
         win_length=int(np.ceil(0.010 * constants.sample_rate)),
         center=False)
     return librosa_wav_to_tf(audio)

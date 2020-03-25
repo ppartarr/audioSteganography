@@ -10,3 +10,4 @@ upper_edge_hertz = 8000.0
 frame_length = 160
 frame_step = frame_length // 4
 num_mel_filters = 64
+n_fft = 1024
