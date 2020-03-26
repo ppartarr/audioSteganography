@@ -64,7 +64,7 @@ else:
         dataset=train_data,
         data_dir=data_dir,
         num_audio_files=args['samples'],
-        frame_length=args['frameLength'],
+        n_fft=args['numFft'],
         fixed_length=args['fixedDataset'])
     if args['saveDataset']:
         datasetFname = 'dataset-{}-{}-f{}'.format(
