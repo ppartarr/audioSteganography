@@ -33,8 +33,8 @@ parser.add_argument('--samples', '-s', default=constants.num_samples,
                     help='number of sample to train the model with')
 parser.add_argument('--batchSize', '-b',
                     default=constants.batch_size, help='training batch size')
-parser.add_argument('--frameLength', '-f', default=constants.frame_length,
-                    help='length of the stft window in frames')
+parser.add_argument('--numFft', '-f', default=constants.n_fft,
+                    help='number of FFT')
 parser.add_argument('--saveDataset', '-sD', action='store_true', default=True,
                     help='serialize dataset once parsed')
 parser.add_argument('--loadDataset', '-lD', type=str,
