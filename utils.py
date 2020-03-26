@@ -40,7 +40,7 @@ def load_dataset_stft_spectrogram(
         dataset=[],
         data_dir="data",
         num_audio_files=100,
-        frame_length=constants.frame_length,
+        n_fft=constants.n_fft,
         lower_edge_hertz=constants.lower_edge_hertz,
         upper_edge_hertz=constants.upper_edge_hertz,
         fixed_length=False):
@@ -54,7 +54,7 @@ def load_dataset_stft_spectrogram(
         return load_fixed_dataset_stft_spectrogram(
             dataset=dataset,
             data_dir=data_dir,
-            frame_length=frame_length,
+            n_fft=n_fft,
             num_audio_files=num_audio_files,
             lower_edge_hertz=lower_edge_hertz,
             upper_edge_hertz=upper_edge_hertz)
@@ -71,7 +71,7 @@ def load_dataset_stft_spectrogram(
             break
 
         mel_specgram = convert_wav_to_stft_spec(os.path.join(
-            data_dir, sample), n_fft=frame_length)
+            data_dir, sample), n_fft=n_fft)
 
         if numpy_specgrams is None:
             numpy_specgrams = mel_specgram[np.newaxis, ...]
@@ -102,14 +102,14 @@ def load_fixed_dataset_stft_spectrogram(
         dataset=[],
         data_dir="data",
         num_audio_files=100,
-        frame_length=constants.frame_length,
+        n_fft=constants.n_fft,
         lower_edge_hertz=constants.lower_edge_hertz,
         upper_edge_hertz=constants.upper_edge_hertz,
         fixed_length=False):
 
     # list initialization
     sample_specgram = convert_wav_to_stft_spec(os.path.join(
-        data_dir, dataset[0]), n_fft=frame_length)
+        data_dir, dataset[0]), n_fft=n_fft)
     numpy_specgrams = np.empty(
         (num_audio_files, sample_specgram.shape[0], sample_specgram.shape[1], sample_specgram.shape[2]), dtype=np.complex64)
     numpy_specgrams.flags.writeable = True
