@@ -119,5 +119,5 @@ if args['plot']:
     plt.colorbar(format='%+2.0f dB')
     plt.title('Output secret')
 
-    # plt.tight_layout()
+    plt.tight_layout()
     plt.savefig(os.path.join(output_dir, 'plot'))
