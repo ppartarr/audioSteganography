@@ -2,8 +2,3 @@ __pycache__/
 data/
 venv/
 .vscode/
-*.hdf5
-*.npy
-logs/
-predictions/
-test_transform/
