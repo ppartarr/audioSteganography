@@ -16,8 +16,8 @@ log.basicConfig(format='%(asctime)s.%(msecs)06d: %(message)s',
                 datefmt='%Y-%m-%d %H:%M:%S', level=log.INFO)
 
 # config
-output_dir = 'test_transform'
-data_file = 'data/TRAIN/DR1/FCJF0/SA1.WAV.wav'
+output_dir = os.path.join(constants.data_dir, 'transform')
+data_file = os.path.join(constants.data_dir, 'TRAIN/DR1/FCJF0/SA1.WAV.wav')
 
 os.makedirs(output_dir, exist_ok=True)
 
@@ -44,13 +44,13 @@ output_decibel = librosa.power_to_db(output_specgram, ref=np.max)
 plt.figure(figsize=(12, 8))
 plt.subplot(2, 1, 1)
 librosa.display.specshow(input_decibel, sr=constants.sample_rate,
-                         hop_length=constants.frame_step, y_axis='mel', x_axis='time')
+                         hop_length=constants.hop_length, y_axis='mel', x_axis='time')
 plt.colorbar(format='%+2.0f dB')
 plt.title('Input wav file as mel spec')
 
 plt.subplot(2, 1, 2)
 librosa.display.specshow(output_decibel, sr=constants.sample_rate,
-                         hop_length=constants.frame_step, y_axis='mel', x_axis='time')
+                         hop_length=constants.hop_length, y_axis='mel', x_axis='time')
 plt.colorbar(format='%+2.0f dB')
 plt.title('Ouput wav file as mel spec')
 
