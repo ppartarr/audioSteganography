@@ -1,13 +1,16 @@
+#!/usr/bin/env python3
+# coding: utf-8
+
 import matplotlib.pyplot as plt
-import utils
 import librosa
 import librosa.display
 import numpy as np
 import os
+import constants
 
 # config
-output_dir = 'plots'
-data_file = 'data/TRAIN/DR1/FCJF0/SA1.WAV.wav'
+output_dir = os.path.join(constants.data_dir, 'plots')
+data_file = os.path.join(constants.data_dir, 'TRAIN/DR1/FCJF0/SA1.WAV.wav')
 
 os.makedirs(output_dir, exist_ok=True)
 

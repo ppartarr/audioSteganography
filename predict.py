@@ -21,18 +21,19 @@ log.basicConfig(format='%(asctime)s.%(msecs)06d: %(message)s',
 # construct argument parser
 parser = argparse.ArgumentParser(
     description="Load a audio steganorgaphy tensorflow model and hide a secret message inside a cover message")
-parser.add_argument("--model", required=True, help="path to trained model")
+parser.add_argument("--model", required=True, help="Path to trained model")
 parser.add_argument("--secret", required=True,
-                    help="path to secret audio file")
-parser.add_argument("--cover", required=True, help="path to audio file")
+                    help="Path to secret audio file")
+parser.add_argument("--cover", required=True, help="Path to cover audio file")
 parser.add_argument("--length", required=False, type=int,
-                    help="length of the audio in seconds")
-parser.add_argument('--plot', '-p', required=False,
-                    help='plot the mel spectrograms of input and ouput audio', action='store_true', default=True)
+                    help="Length of the audio in seconds")
+parser.add_argument('--skip-plot', '-sP', required=False,
+                    help='Disable plotting', action='store_true')
 args = vars(parser.parse_args())
 
 # config
-output_dir = os.path.join('predictions', os.path.basename(args['model']))
+output_dir = os.path.join(
+    constants.data_dir, 'predictions', os.path.basename(args['model']))
 
 # convert wav to spectrograms
 secret_in = utils.convert_wav_to_stft_spec(args['secret'])
@@ -73,7 +74,7 @@ for output in [
     tf.io.write_file(full_fname, wav, name=None)
     log.info('Spectrogram converted to wav: {}'.format(full_fname))
 
-if args['plot']:
+if not args['skip_plot']:
     # create plot of spectrograms
 
     # print()
@@ -97,25 +98,25 @@ if args['plot']:
     plt.figure(figsize=(12, 8))
     plt.subplot(2, 2, 1)
     librosa.display.specshow(cover_in_melspec, sr=constants.sample_rate,
-                             hop_length=constants.frame_step, y_axis='mel', x_axis='time')
+                             hop_length=constants.hop_length, y_axis='mel', x_axis='time')
     plt.colorbar(format='%+2.0f dB')
     plt.title('Input cover')
 
     plt.subplot(2, 2, 2)
     librosa.display.specshow(cover_out_melspec, sr=constants.sample_rate,
-                             hop_length=constants.frame_step, y_axis='mel', x_axis='time')
+                             hop_length=constants.hop_length, y_axis='mel', x_axis='time')
     plt.colorbar(format='%+2.0f dB')
     plt.title('Ouput cover')
 
     plt.subplot(2, 2, 3)
     librosa.display.specshow(secret_in_melspec, sr=constants.sample_rate,
-                             hop_length=constants.frame_step, y_axis='mel', x_axis='time')
+                             hop_length=constants.hop_length, y_axis='mel', x_axis='time')
     plt.colorbar(format='%+2.0f dB')
     plt.title('Input secret')
 
     plt.subplot(2, 2, 4)
     librosa.display.specshow(secret_out_melspec, sr=constants.sample_rate,
-                             hop_length=constants.frame_step, y_axis='mel', x_axis='time')
+                             hop_length=constants.hop_length, y_axis='mel', x_axis='time')
     plt.colorbar(format='%+2.0f dB')
     plt.title('Output secret')
 

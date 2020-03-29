@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# coding: utf-8
+
 import tensorflow.keras.utils
 import constants
 
@@ -20,9 +23,9 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         """
         Generate one batch of data
         """
-        secret_batch = self.secret[index *
-                                   self.batch_size:(index + 1) * self.batch_size]
-        cover_batch = self.cover[index *
-                                 self.batch_size:(index + 1) * self.batch_size]
+        secret_batch = self.secret[
+            index * self.batch_size:(index + 1) * self.batch_size]
+        cover_batch = self.cover[
+            index * self.batch_size:(index + 1) * self.batch_size]
 
         return ([secret_batch, cover_batch], [secret_batch, cover_batch])
