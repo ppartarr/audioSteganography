@@ -15,6 +15,11 @@ To predict from a given model:
     --cover path/to/cover.wav 
 ```
 
+To check parsing procedures without involving a trained model:
+```bash
+./transform.py
+```
+
 
 ## Dataset
 
