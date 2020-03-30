@@ -12,7 +12,7 @@ To predict from a given model:
 ```bash
 ./predict.py [--skip-plot] --model path/to/model.hdf5 \
     --secret path/to/secret.wav \
-    --cover path/to/cover.wav 
+    --cover path/to/cover.wav
 ```
 
 To check parsing procedures without involving a trained model:
